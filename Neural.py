@@ -10,10 +10,10 @@ class Neural(object):
     # Epsilon: convergence allowance
     # Convergence: grad, newt *not implemented
 
-    def __init__(self, units, basis='sig', delta='sse', gamma=1e-1, epsilon=1e-4):
+    def __init__(self, units, basis=Function.basis_sigmoid, delta=Function.delta_linear, gamma=1e-1, epsilon=1e-4):
         self._weights = []
         for i in range(len(units) - 1):
-            self._weights.append(np.random.rand(*units[i:i+1]))
+            self._weights.append(np.random.rand(units[i], units[i+1]))
 
         self._basis = basis
         self._delta = delta
@@ -25,22 +25,16 @@ class Neural(object):
         return self._basis
 
     @basis.setter
-    def basis(self, name):
-        if name == 'sig':
-            self._basis = Function.basis_sigmoid
-        else:
-            self._basis = Function.basis_rectilinear
+    def basis(self, basis):
+        self._basis = basis
 
     @property
     def delta(self):
         return self._delta
 
     @delta.setter
-    def delta(self, name):
-        if name == 'sse':
-            self._delta = Function.delta_linear
-        else:
-            self._delta = Function.delta_logistic
+    def delta(self, delta):
+        self._delta = delta
 
     @property
     def weights(self):
@@ -53,17 +47,20 @@ class Neural(object):
         return data
 
     def train(self, data, expectation):
+        print(self.basis)
         converged = False
         while not converged:
             for layer in range(len(self._weights)):
                 # Where dx denotes matrix accumulation
-                dx_dWvec = np.kron(numpy.ndarray.flatten(data),
+                dx_dWvec = np.kron(np.ndarray.flatten(data),
                                    np.identity(np.size(np.matmul(np.transpose(self._weights[layer]), data))))
 
                 # Accumulate derivative through all hidden layers
                 for i in range(layer, len(self._weights)):
                     r = np.matmul(self._weights[i], data)
-                    dx_dWvec = np.matmul(np.matmul(self._weights[i], np.diag(self._basis.prime(r))), dx_dWvec)
+                    dx_dWvec = np.matmul(np.matmul(np.ndarray.flatten(self._weights[i]),
+                                                   np.diag(self._basis.prime([r]))),
+                                         dx_dWvec)
 
                 # Final error calculation
                 dln_dWvec = np.matmul(self._delta(expectation, self.evaluate(data)), dx_dWvec)
