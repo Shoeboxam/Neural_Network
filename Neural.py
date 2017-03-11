@@ -13,7 +13,7 @@ class Neural(object):
     def __init__(self, units, basis=Function.basis_sigmoid, delta=Function.delta_linear, gamma=1e-1, epsilon=1e-4):
         self._weights = []
         for i in range(len(units) - 1):
-            self._weights.append(np.random.rand(units[i], units[i+1]) * 0.1 - 0.05)
+            self._weights.append(np.random.rand(units[i+1], units[i]) * 0.1 - 0.05)
 
         self._basis = basis
         self._delta = delta
@@ -26,7 +26,7 @@ class Neural(object):
             depth = len(self._weights)
 
         for i in range(depth):
-            data = np.matmul(data, self._weights[i])
+            data = np.matmul(self._weights[i], data)
             data = self._basis([data])
         return data
 
@@ -35,7 +35,8 @@ class Neural(object):
         while not converged:
 
             # Choose a stimulus
-            stimulus = data[np.random.randint(0, len(data))]
+            choice = np.random.randint(0, len(data))
+            stimulus, expect = data[choice], expectation[choice]
 
             # Accumulate changes to each derivative
             dln_dx = [0] * len(self._weights)
@@ -44,22 +45,23 @@ class Neural(object):
 
             # Train each weight set sequentially
             for layer in range(len(self._weights)):
-                # dx is used to denote the beginning of the accumulation
-                # dr_dWvec =       S'                x I
-                dx_dWvec = np.kron(np.transpose(stimulus), np.identity(np.shape(self._weights[layer])[1]))
+
+                # accumulator =       S'                 x I
+                dr_dWvec = np.kron(np.transpose(stimulus), np.identity(np.shape(self._weights[layer])[0]))
 
                 # Accumulate derivative through all hidden layers
-                for i in range(layer, len(self._weights)):
-                    # Input to prediction is dependent on its depth within the net
-                    prediction = self.evaluate(data, depth=i) # y = W's
+                for i in range(layer, len(self._weights) - 1):
 
-                    # This fails because it is taking the scalar derivative when a matrix derivative is needed.
-                    # accumulator =                df_dh           * dh_dr  DIAG REMOVED             * existing
-                    dx_dWvec = np.matmul(np.matmul(np.transpose(self._weights[i]), np.diag(self._basis.prime([prediction]))), dx_dWvec)
+                    # Notice: input to prediction is dependent on its depth within the net
+                    # r =         W               * s
+                    r = np.matmul(self._weights[i], self.evaluate(stimulus, depth=i))
+                    # dr_dr =        (dr_new)_dh        * dh_(dr_old)
+                    dr_dr = np.matmul(self._weights[i+1], np.diag(self._basis.prime([r])))
+                    # accumulator =     layer * existing
+                    dr_dWvec = np.matmul(dr_dr, dr_dWvec)
 
-                # Final error calculation
-                # accumulator =       dln_df                                               * existing
-                dln_dWvec = np.matmul(self._delta.prime([expectation, self.evaluate(data)]), dx_dWvec)
+                # accumulator =       dln_df                                              * existing
+                dln_dWvec = np.matmul(self._delta.prime([expect, self.evaluate(stimulus)]), dr_dWvec)
                 dln_dx[layer] += np.reshape(dln_dWvec, np.shape(self._weights[layer])) / len(data)
 
                 # Update weights
