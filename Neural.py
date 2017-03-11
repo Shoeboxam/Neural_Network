@@ -27,12 +27,15 @@ class Neural(object):
 
         for i in range(depth):
             data = np.matmul(data, self._weights[i])
-            data = self._basis(data)
+            data = self._basis([data])
         return data
 
     def train(self, data, expectation):
         converged = False
         while not converged:
+
+            # Choose a stimulus
+            stimulus = data[np.random.randint(0, len(data))]
 
             # Accumulate changes to each derivative
             dln_dx = [0] * len(self._weights)
@@ -43,19 +46,19 @@ class Neural(object):
             for layer in range(len(self._weights)):
                 # dx is used to denote the beginning of the accumulation
                 # dr_dWvec =       S'                x I
-                dx_dWvec = np.kron(np.transpose(data), np.identity(len(data)))
+                dx_dWvec = np.kron(np.transpose(stimulus), np.identity(np.shape(self._weights[layer])[1]))
 
                 # Accumulate derivative through all hidden layers
                 for i in range(layer, len(self._weights)):
                     # Input to prediction is dependent on its depth within the net
-                    prediction = np.matmul(np.transpose(self._weights[i]), self.evaluate(data, depth=i)) # y = W's
+                    prediction = self.evaluate(data, depth=i) # y = W's
 
                     # This fails because it is taking the scalar derivative when a matrix derivative is needed.
                     # accumulator =                df_dh           * dh_dr  DIAG REMOVED             * existing
-                    dx_dWvec = np.matmul(np.matmul(self._weights[i], self._basis.prime([prediction])), dx_dWvec)
+                    dx_dWvec = np.matmul(np.matmul(np.transpose(self._weights[i]), np.diag(self._basis.prime([prediction]))), dx_dWvec)
 
                 # Final error calculation
-                # accumulator =       dln_df                                              * existing
+                # accumulator =       dln_df                                               * existing
                 dln_dWvec = np.matmul(self._delta.prime([expectation, self.evaluate(data)]), dx_dWvec)
                 dln_dx[layer] += np.reshape(dln_dWvec, np.shape(self._weights[layer])) / len(data)
 
@@ -63,7 +66,7 @@ class Neural(object):
                 self._weights[layer] -= self._gamma * dln_dx[layer]
 
             # Exit condition
-            if self._delta(expectation, self.evaluate(data)) < self._epsilon:
+            if self._delta(expectation, self.evaluate(stimulus)) < self._epsilon:
                 converged = True
 
                     # This has many bugs. I'm working on cleaning it up. Suggestions welcome.
