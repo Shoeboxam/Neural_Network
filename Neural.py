@@ -13,15 +13,21 @@ class Neural(object):
     def __init__(self, units, basis=Function.basis_sigmoid, delta=Function.delta_linear, gamma=1e-1, epsilon=1e-4):
         self._weights = []
         for i in range(len(units) - 1):
-            self._weights.append(np.random.rand(units[i], units[i+1]) * 0.1 - 0.5)
+            self._weights.append(np.random.rand(units[i], units[i+1]) * 0.1 - 0.05)
 
         self._basis = basis
         self._delta = delta
         self._gamma = gamma
         self._epsilon = epsilon
 
-    def evaluate(self, data):
-        for i in range(len(self._weights)):
+    def evaluate(self, data, depth=-1):
+        # Depth can limit evaluation to a certain number of layers in the net
+        if depth == -1:
+            limit = len(self._weights)
+        else:
+            limit = depth
+
+        for i in range(limit):
             data = np.matmul(data, self._weights[i])
             data = self._basis(data)
         return data
@@ -36,8 +42,8 @@ class Neural(object):
 
                 # Accumulate derivative through all hidden layers
                 for i in range(layer, len(self._weights)):
-                    prediction = np.matmul(np.transpose(self._weights[i]), data) # y = W's
-
+                    # Input to prediction is dependent on its depth within the net
+                    prediction = np.matmul(np.transpose(self._weights[i]), self.evaluate(data, depth=i)) # y = W's
                     # This fails because it is taking the scalar derivative when a matrix derivative is needed.
                     # accumulator =                df_dh           * dh_dr  DIAG REMOVED             * existing
                     dx_dWvec = np.matmul(np.matmul(self._weights[i], self._basis.prime([prediction])), dx_dWvec)
