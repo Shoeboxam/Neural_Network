@@ -45,8 +45,8 @@ class Neural(object):
 
             # Train each weight set sequentially
             for layer in range(len(self._weights)):
-                # accumulator =       S'                 x I
-                dr_dWvec = np.kron(np.transpose(self.evaluate(stimulus, depth=layer)), np.identity(np.shape(self._weights[layer])[0]))
+                dr_dWvec = np.kron(np.transpose(self.evaluate(stimulus, depth=layer)),  # S' at layer
+                                   np.identity(np.shape(self._weights[layer])[0]))      # I
 
                 # Accumulate derivative through all hidden layers
                 for i in range(layer, len(self._weights) - 1):
@@ -66,11 +66,9 @@ class Neural(object):
                 # Update weights
                 self._weights[layer] -= self._gamma * dln_dx[layer]
 
+            print(self.evaluate(np.transpose(data)))
+
             # Exit condition
             difference = np.array(self._delta([expectation, self.evaluate(np.transpose(data))]))
-            print(self._weights[0])
             if np.all(np.abs(difference < self._epsilon)):
-                print(self._weights[0])
                 converged = True
-
-                    # This has many bugs. I'm working on cleaning it up. Suggestions welcome.
