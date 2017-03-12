@@ -38,11 +38,6 @@ class Neural(object):
             choice = np.random.randint(0, len(data))
             stimulus, expect = data[choice], expectation[choice]
 
-            # Accumulate changes to each derivative
-            dln_dx = [0] * len(self._weights)
-            for layer in range(len(self._weights)):
-                dln_dx[layer] = np.zeros(np.shape(self._weights[layer]))
-
             # Train each weight set sequentially
             for layer in range(len(self._weights)):
                 dr_dWvec = np.kron(np.transpose(self.evaluate(stimulus, depth=layer)),  # S' at layer
@@ -61,10 +56,10 @@ class Neural(object):
 
                 # accumulator =       dln_df                                              * existing
                 dln_dWvec = np.matmul(self._delta.prime([expect, self.evaluate(stimulus)]), dr_dWvec)
-                dln_dx[layer] += np.reshape(dln_dWvec, np.shape(self._weights[layer])) / len(data)
+                dln_dWvec = np.reshape(dln_dWvec, np.shape(self._weights[layer])) / len(data)
 
                 # Update weights
-                self._weights[layer] -= self._gamma * dln_dx[layer]
+                self._weights[layer] -= self._gamma * dln_dWvec
 
             print(self.evaluate(np.transpose(data)))
 
