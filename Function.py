@@ -20,3 +20,4 @@ basis_rectilinear = Function(lambda x: np.log(1 + np.exp(x)), lambda x: (1 + np.
 delta_linear      = Function(lambda O, P: (O - P)**2, lambda O, P: -2 * np.transpose(O - P))
 delta_logistic    = Function(lambda O, P: np.abs(O * np.log(basis_sigmoid([P])) + (1 - O) * np.log(1 - basis_sigmoid([P]))),
                              lambda O, P: np.transpose(np.zeros(np.shape(O)) + basis_sigmoid([P]) * (1 - basis_sigmoid([P]))))
+

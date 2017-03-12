@@ -1,24 +1,34 @@
 import numpy as np
 import Function
+import matplotlib.pyplot as plt
 
+plt.ion()
+plt.style.use('fivethirtyeight')
 
 class Neural(object):
     # Units: List of quantity of nodes per layer
-    # Basis: sig, rect
-    # Delta: sse, logistic
+    # Basis: sigmoidal, rectilinear
+    # Delta: linear, logistic
     # Gamma: learning rate
     # Epsilon: convergence allowance
     # Convergence: grad, newt *not implemented
 
-    def __init__(self, units, basis=Function.basis_sigmoid, delta=Function.delta_linear, gamma=1e-1, epsilon=1e-4):
+    def __init__(self, units,
+                 basis=Function.basis_sigmoid, delta=Function.delta_linear,
+                 gamma=1e-1, epsilon=1e-4, debug=False):
         self._weights = []
         for i in range(len(units) - 1):
             self._weights.append(np.random.rand(units[i+1], units[i]) * 0.1 - 0.05)
 
-        self._basis = basis
-        self._delta = delta
-        self._gamma = gamma
-        self._epsilon = epsilon
+        self.basis = basis
+        self.delta = delta
+        self.gamma = gamma
+        self.epsilon = epsilon
+        self.debug = debug
+
+    @property
+    def weights(self):
+        return self._weights
 
     def evaluate(self, data, depth=-1):
         # Depth can limit evaluation to a certain number of layers in the net
@@ -27,43 +37,52 @@ class Neural(object):
 
         for i in range(depth):
             data = np.matmul(self._weights[i], data)
-            data = self._basis([data])
+            data = self.basis([data])
         return data
 
     def train(self, data, expectation):
         converged = False
+        iteration = 0
+
         while not converged:
 
             # Choose a stimulus
             choice = np.random.randint(0, len(data))
             stimulus, expect = data[choice], expectation[choice]
 
+            # Layer derivative accumulator
+            df_dr = np.eye(np.shape(self._weights[-1])[0])
+
             # Train each weight set sequentially
-            for layer in range(len(self._weights)):
-                dr_dWvec = np.kron(np.transpose(self.evaluate(stimulus, depth=layer)),  # S' at layer
+            for layer in reversed(range(len(self._weights) - 1)):
+                dr_dWvec = np.kron(np.transpose(self.evaluate(stimulus, depth=layer)),  # S' at current layer
                                    np.identity(np.shape(self._weights[layer])[0]))      # I
 
-                # Accumulate derivative through all hidden layers
-                for i in range(layer, len(self._weights) - 1):
+                # Notice: input to prediction is dependent on its depth within the net
+                # reinforcement = W               * s
+                r = np.matmul(self._weights[layer], self.evaluate(stimulus, depth=layer))
+                # dr_dr (next layer) = W (next layer)       * one-to-one nonlinear transformation
+                dr_dr = np.matmul(self._weights[layer+1], np.diag(self.basis.prime([r])))
 
-                    # Notice: input to prediction is dependent on its depth within the net
-                    # r =         W               * s
-                    r = np.matmul(self._weights[i], self.evaluate(stimulus, depth=i))
-                    # dr_dr =        (dr_new)_dh        * dh_(dr_old)
-                    dr_dr = np.matmul(self._weights[i+1], np.diag(self._basis.prime([r])))
-                    # accumulator =     layer * existing
-                    dr_dWvec = np.matmul(dr_dr, dr_dWvec)
+                # Accumulate interior derivative
+                df_dr = np.matmul(df_dr, dr_dr)
+                # accumulator =     layers * input
+                dr_dWvec = np.matmul(df_dr, dr_dWvec)
 
-                # accumulator =       dln_df                                              * existing
-                dln_dWvec = np.matmul(self._delta.prime([expect, self.evaluate(stimulus)]), dr_dWvec)
-                dln_dWvec = np.reshape(dln_dWvec, np.shape(self._weights[layer])) / len(data)
+                # accumulator =       dln_df                                             * existing
+                dln_dWvec = np.matmul(self.delta.prime([expect, self.evaluate(stimulus)]), dr_dWvec)
+                dln_dW = np.reshape(dln_dWvec, np.shape(self._weights[layer])) / len(data)
 
                 # Update weights
-                self._weights[layer] -= self._gamma * dln_dWvec
-
-            print(self.evaluate(np.transpose(data)))
+                self._weights[layer] -= self.gamma * dln_dW
 
             # Exit condition
-            difference = np.array(self._delta([expectation, self.evaluate(np.transpose(data))]))
-            if np.all(np.abs(difference < self._epsilon)):
+            difference = np.linalg.norm(self.delta([expectation, self.evaluate(np.transpose(data))]))
+            if difference < self.epsilon:
                 converged = True
+
+            if self.debug:
+                print(str(iteration) + ': ' + str(self.evaluate(np.transpose(data))))
+                plt.plot(iteration, difference, marker = '.', ms=10, color=(.9148, .604, .0945))
+                plt.pause(0.0000000001)
+                iteration += 1
