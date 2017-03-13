@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 plt.style.use('fivethirtyeight')
 
+
 class Neural(object):
     # Units: List of quantity of nodes per layer
     # Basis: sigmoidal, rectilinear
@@ -17,7 +18,8 @@ class Neural(object):
                  gamma=1e-1, epsilon=1e-4, debug=False):
         self._weights = []
         for i in range(len(units) - 1):
-            self._weights.append(np.random.rand(units[i+1], units[i]) * 0.1 - 0.05)
+            self._weights.append(np.random.rand(units[i+1], units[i]) - 0.05)
+        self._weights.append(np.array([[1]]))  # Dummy layer for output
 
         self.basis = basis
         self.delta = delta
@@ -54,7 +56,7 @@ class Neural(object):
             df_dr = np.eye(np.shape(self._weights[-1])[0])
 
             # Train each weight set sequentially
-            for layer in reversed(range(len(self._weights) - 1)):
+            for layer in reversed(range(len(self._weights)-1)):
                 dr_dWvec = np.kron(np.transpose(self.evaluate(stimulus, depth=layer)),  # S' at current layer
                                    np.identity(np.shape(self._weights[layer])[0]))      # I
 
@@ -85,8 +87,8 @@ class Neural(object):
                 print(str(iteration) + ': ' + str(self.evaluate(np.transpose(data))))
                 pts.append((iteration, difference))
                 if iteration % 25 == 0:
-                    x, y = zip(*pts)
-                    plt.plot(x, y, marker='.', color=(.9148, .604, .0945))
+                    plt.plot(*zip(*pts), marker='.', color=(.9148, .604, .0945))
                     plt.pause(0.00001)
                     pts.clear()
+
                 iteration += 1
