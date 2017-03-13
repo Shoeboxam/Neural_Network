@@ -2,7 +2,6 @@ import numpy as np
 import Function
 import matplotlib.pyplot as plt
 
-plt.ion()
 plt.style.use('fivethirtyeight')
 
 class Neural(object):
@@ -42,7 +41,8 @@ class Neural(object):
 
     def train(self, data, expectation):
         converged = False
-        iteration = 0
+        iteration = 0       # DEBUG
+        pts = []
 
         while not converged:
 
@@ -83,6 +83,10 @@ class Neural(object):
 
             if self.debug:
                 print(str(iteration) + ': ' + str(self.evaluate(np.transpose(data))))
-                plt.plot(iteration, difference, marker = '.', ms=10, color=(.9148, .604, .0945))
-                plt.pause(0.0000000001)
+                pts.append((iteration, difference))
+                if iteration % 25 == 0:
+                    x, y = zip(*pts)
+                    plt.plot(x, y, marker='.', color=(.9148, .604, .0945))
+                    plt.pause(0.00001)
+                    pts.clear()
                 iteration += 1
