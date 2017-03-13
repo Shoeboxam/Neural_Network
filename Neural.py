@@ -15,15 +15,19 @@ class Neural(object):
 
     def __init__(self, units,
                  basis=Function.basis_sigmoid, delta=Function.delta_linear,
-                 gamma=1e-1, epsilon=1e-4, debug=False):
+                 gamma=1e-2, epsilon=1e-4, debug=False):
         self._weights = []
         for i in range(len(units) - 1):
-            self._weights.append(np.random.rand(units[i+1], units[i]) - 0.05)
+            self._weights.append(np.random.rand(units[i+1], units[i])*2 - 1)
         self._weights.append(np.array([[1]]))  # Dummy layer for output
 
         self.basis = basis
         self.delta = delta
+
+        if type(gamma) == float:
+            gamma = [gamma] * len(units)
         self.gamma = gamma
+
         self.epsilon = epsilon
         self.debug = debug
 
@@ -37,8 +41,8 @@ class Neural(object):
             depth = len(self._weights)
 
         for i in range(depth):
-            data = np.matmul(self._weights[i], data)
             data = self.basis([data])
+            data = np.matmul(self._weights[i], data)
         return data
 
     def train(self, data, expectation):
@@ -76,7 +80,7 @@ class Neural(object):
                 dln_dW = np.reshape(dln_dWvec, np.shape(self._weights[layer])) / len(data)
 
                 # Update weights
-                self._weights[layer] -= self.gamma * dln_dW
+                self._weights[layer] -= self.gamma[layer] * dln_dW
 
             # Exit condition
             difference = np.linalg.norm(self.delta([expectation, self.evaluate(np.transpose(data))]))
