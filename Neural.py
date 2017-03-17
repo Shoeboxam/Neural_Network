@@ -15,11 +15,11 @@ class Neural(object):
 
     def __init__(self, units,
                  basis=Function.basis_sigmoid, delta=Function.delta_linear,
-                 gamma=1e-2, epsilon=1e-4, debug=False):
+                 gamma=1e-2, epsilon=1e-2, debug=False):
         self._weights = []
         for i in range(len(units) - 1):
-            self._weights.append(np.random.rand(units[i+1], units[i])*2 - 1)
-        self._weights.append(np.array([[1]]))  # Dummy layer for output
+            self._weights.append((np.random.rand(units[i+1], units[i]) - .5) * 2)
+        self._weights.append(np.array([[1]]))  # Dummy layer for ln
 
         self.basis = basis
         self.delta = delta
@@ -41,56 +41,65 @@ class Neural(object):
             depth = len(self._weights)
 
         for i in range(depth):
-            data = self.basis([data])
-            data = np.matmul(self._weights[i], data)
+            data = self._weights[i] @ data
+
+            # Do not transform on the final layer
+            if i != len(self._weights)-1:
+                data = self.basis(data)
+
         return data
 
     def train(self, data, expectation):
-        converged = False
+        # Add the magnitude of negative expectation to epsilon, since guesses are from 0-1
+        eps_correction = np.linalg.norm(expectation[np.where(expectation < 0)])
+
         iteration = 0       # DEBUG
         pts = []
 
+        converged = False
         while not converged:
 
             # Choose a stimulus
-            choice = np.random.randint(0, len(data))
-            stimulus, expect = data[choice], expectation[choice]
+            choice = np.random.randint(len(data))
+            [stimulus, expect] = data[choice], expectation[choice]
 
             # Layer derivative accumulator
-            df_dr = np.eye(np.shape(self._weights[-1])[0])
+            dr_dr = np.eye(np.shape(self._weights[-1])[0])
+
+            # Delta accumulator
+            dln_dW = []
+            for i in range(len(self._weights) - 1):
+                dln_dW.append(np.zeros(np.shape(self._weights[i])))
 
             # Train each weight set sequentially
             for layer in reversed(range(len(self._weights)-1)):
-                dr_dWvec = np.kron(np.transpose(self.evaluate(stimulus, depth=layer)),  # S' at current layer
-                                   np.identity(np.shape(self._weights[layer])[0]))      # I
+                dr_dWvec = np.kron(self.evaluate(stimulus, depth=layer).T,          # S' at current layer
+                                   np.identity(np.shape(self._weights[layer])[0]))  # I
 
                 # Notice: input to prediction is dependent on its depth within the net
-                # reinforcement = W               * s
-                r = np.matmul(self._weights[layer], self.evaluate(stimulus, depth=layer))
-                # dr_dr (next layer) = W (next layer)       * one-to-one nonlinear transformation
-                dr_dr = np.matmul(self._weights[layer+1], np.diag(self.basis.prime([r])))
+                # reinforcement = W      x s
+                r = self._weights[layer] @ self.evaluate(stimulus, depth=layer)
+                # Interior layer accumulation
+                dr_dr = dr_dr @ self._weights[layer+1] @ np.diag(self.basis.prime(r))
 
-                # Accumulate interior derivative
-                df_dr = np.matmul(df_dr, dr_dr)
-                # accumulator =     layers * input
-                dr_dWvec = np.matmul(df_dr, dr_dWvec)
+                # Final error derivative
+                dln_dr = self.delta.prime(expect, self.evaluate(stimulus)) / len(data)
 
-                # accumulator =       dln_df                                             * existing
-                dln_dWvec = np.matmul(self.delta.prime([expect, self.evaluate(stimulus)]), dr_dWvec)
-                dln_dW = np.reshape(dln_dWvec, np.shape(self._weights[layer])) / len(data)
+                dln_dWvec = dln_dr @ dr_dr @ dr_dWvec
+                dln_dW[layer] += np.reshape(dln_dWvec, np.shape(self._weights[layer]))
 
                 # Update weights
-                self._weights[layer] -= self.gamma[layer] * dln_dW
+                self._weights[layer] -= self.gamma[layer] * dln_dW[layer]
 
             # Exit condition
-            difference = np.linalg.norm(self.delta([expectation, self.evaluate(np.transpose(data))]))
-            if difference < self.epsilon:
+            difference = np.linalg.norm(self.delta(expectation, self.evaluate(data.T)))
+            if difference - eps_correction < self.epsilon:
                 converged = True
 
             if self.debug:
-                print(str(iteration) + ': ' + str(self.evaluate(np.transpose(data))))
                 pts.append((iteration, difference))
                 if iteration % 25 == 0:
+                    print(str(iteration) + ': ' + str(self.evaluate(data.T)[0]))
                     plt.plot(*zip(*pts), marker='.', color=(.9148, .604, .0945))
                     plt.pause(0.00001)
                     pts.clear()
