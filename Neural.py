@@ -50,8 +50,6 @@ class Neural(object):
         return data
 
     def train(self, data, expectation):
-        # Add the magnitude of negative expectation to epsilon, since guesses are from 0-1
-        eps_correction = np.linalg.norm(expectation[np.where(expectation < 0)])
 
         iteration = 0       # DEBUG
         pts = []
@@ -92,8 +90,8 @@ class Neural(object):
                 self._weights[layer] -= self.gamma[layer] * dln_dW[layer]
 
             # Exit condition
-            difference = np.linalg.norm(self.delta(expectation, self.evaluate(data.T)))
-            if difference - eps_correction < self.epsilon:
+            difference = np.sum(np.abs(expectation - self.evaluate(data.T)))
+            if difference < self.epsilon:
                 converged = True
 
             if self.debug:

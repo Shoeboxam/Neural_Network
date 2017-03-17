@@ -12,10 +12,10 @@ S = np.array([[+1,  1],       # Stimuli data  (environment)
               [+1, -1],
               [-1, -1]])
 
-O = np.array([1, -1, 1, -1])  # Output data (expectation)
+O = np.array([1, -1, -1, 1])  # Output data (expectation)
 
 # Create the net
-net = Neural(layers, delta=delta_linear, basis=basis_softplus, gamma=[.05, .03, .01], debug=True)
+net = Neural(layers, delta=delta_linear, basis=basis_bent, gamma=[.005, .0003, .001], debug=True)
 
 net.train(S, O)
 print(net.evaluate(S.T))
