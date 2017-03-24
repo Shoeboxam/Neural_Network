@@ -13,7 +13,7 @@ class Function(object):
         return self._evaluator_prime(*args)
 
 # PARAMETERS
-tau   = .001      # Sigmoid threshold unit
+tau   = 1      # Sigmoid threshold unit
 alpha = 0         # Parametrized rectified linear unit
 
 # BASIS FUNCTIONS
@@ -23,7 +23,7 @@ basis_relu      = Function(lambda x: piecewise(x, alpha * x, x), lambda x: piece
 basis_exponent  = Function(lambda x: piecewise(x, alpha*(np.exp(x) - 1), x),
                            lambda x: piecewise(x, alpha*np.exp(x), np.ones(np.shape(x))))
 
-basis_sigmoid   = Function(lambda x: tau * (1 + np.exp(-x/tau))**-1, lambda x: np.exp(x)/(np.exp(x) + 1)**2)
+basis_sigmoid   = Function(lambda x: tau * (1 + np.exp(-x/tau))**-1, lambda x: np.exp(x/tau)/(np.exp(x/tau) + 1)**2)
 basis_softplus  = Function(lambda x: np.log(1 + np.exp(x)), lambda x: (1 + np.exp(-x))**-1)
 basis_gaussian  = Function(lambda x: np.exp(-x**2), lambda x: -2 * x * np.exp(-x**2))
 
@@ -44,6 +44,7 @@ delta_linear    = Function(lambda O, P: (O - P)**2,
 delta_logistic  = Function(lambda O, P: (O * np.log(basis_sigmoid(P))) + (1 - O) * np.log(1 - basis_sigmoid(P)),
                            lambda O, P: (basis_sigmoid(P) - O))
 
+
 def piecewise(x, lower, upper, thresh=0):
 
     low_indices = np.where(x < thresh)
@@ -57,8 +58,8 @@ def piecewise(x, lower, upper, thresh=0):
         x[up_indices] = upper
     else:
         x[up_indices] = upper[up_indices]
-
     return x
+
 
 def piecewise_origin(x, outer, inner, origin=0):
     x[np.where(x == origin)] = inner

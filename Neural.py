@@ -66,13 +66,13 @@ class Neural(object):
 
             # Delta accumulator
             dln_dW = []
-            for i in range(len(self._weights) - 1):
+            for i in range(len(self._weights)):
                 dln_dW.append(np.zeros(np.shape(self._weights[i])))
 
             # Train each weight set sequentially
             for layer in reversed(range(len(self._weights)-1)):
-                dr_dWvec = np.kron(self.evaluate(stimulus, depth=layer).T,          # S' at current layer
-                                   np.identity(np.shape(self._weights[layer])[0]))  # I
+                dr_dWvec = np.kron(np.identity(np.shape(self._weights[layer])[0]),  # I
+                                   self.evaluate(stimulus, depth=layer).T)          # S' at current layer
 
                 # Notice: input to prediction is dependent on its depth within the net
                 # reinforcement = W      x s
