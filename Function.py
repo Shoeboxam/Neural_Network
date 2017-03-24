@@ -13,8 +13,8 @@ class Function(object):
         return self._evaluator_prime(*args)
 
 # PARAMETERS
-tau   = 1      # Sigmoid threshold unit
-alpha = 0         # Parametrized rectified linear unit
+tau   = 1       # Sigmoid threshold unit
+alpha = 0       # Parametrized rectified linear unit
 
 # BASIS FUNCTIONS
 basis_identity  = Function(lambda x: x, lambda x: np.ones(np.shape(x)))
@@ -30,7 +30,7 @@ basis_gaussian  = Function(lambda x: np.exp(-x**2), lambda x: -2 * x * np.exp(-x
 basis_tanh      = Function(lambda x: np.tanh(x), lambda x: 1 - np.tanh(x)**2)
 basis_arctan    = Function(lambda x: np.arctan(x), lambda x: 1 / (x**2 + 1))
 basis_sinusoid  = Function(lambda x: np.sin(x), lambda x: np.cos(x))
-basis_sinc      = Function(lambda x: piecewise_origin(x, np.sin(x) / x, 1),
+basis_sinc      = Function(lambda x: piecewise_origin(x, np.sin(x) / x, 0),
                            lambda x: piecewise_origin(x, np.cos(x) / x - np.sin(x) / x**2, 0))
 
 basis_softsign  = Function(lambda x: x / (1 + np.abs(x)), lambda x: 1 / (1 + np.abs(x))**2)
