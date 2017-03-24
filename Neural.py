@@ -18,8 +18,8 @@ class Neural(object):
                  gamma=1e-2, epsilon=1e-2, debug=False):
         self._weights = []
         for i in range(len(units) - 1):
-            self._weights.append((np.random.rand(units[i+1], units[i]) - .5) * 2)
-        self._weights.append(np.array([[1]]))  # Dummy layer for ln
+            self._weights.append((np.random.rand(units[i+1], units[i]) - .5) * 25/np.sqrt(units[i]))
+        self._weights[0] = np.c_[self._weights[0], np.zeros(units[1])]
 
         self.basis = basis
         self.delta = delta
@@ -37,6 +37,11 @@ class Neural(object):
 
     def evaluate(self, data, depth=-1):
         # Depth can limit evaluation to a certain number of layers in the net
+        if np.ndim(data) == 1:
+            data = np.r_[data, 1]
+        else:
+            data = np.r_[data, np.ones([1, np.shape(data)[np.ndim(data)-1]])]
+
         if depth == -1:
             depth = len(self._weights)
 
