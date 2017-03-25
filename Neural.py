@@ -18,8 +18,8 @@ class Neural(object):
                  gamma=1e-2, epsilon=1e-2, debug=False):
         self._weights = []
         for i in range(len(units) - 1):
-            self._weights.append((np.random.rand(units[i+1], units[i]) - .5) * 25/np.sqrt(units[i]))
-        self._weights[0] = np.c_[self._weights[0], np.zeros(units[1])]
+            self._weights.append((np.random.rand(units[i+1], units[i]) * 2 - 1) / np.sqrt(units[i-1]))
+        self._weights[0] = np.c_[self._weights[0], np.zeros(units[1])]  # Bias units
 
         self.basis = basis
         self.delta = delta
@@ -37,10 +37,12 @@ class Neural(object):
 
     def evaluate(self, data, depth=-1):
         # Depth can limit evaluation to a certain number of layers in the net
+
+        # Add bias units:
         if np.ndim(data) == 1:
             data = np.r_[data, 1]
         else:
-            data = np.r_[data, np.ones([1, np.shape(data)[np.ndim(data)-1]])]
+            data = np.c_[data, np.ones([np.shape(data)[0], 1])].T
 
         if depth == -1:
             depth = len(self._weights)
@@ -54,7 +56,7 @@ class Neural(object):
 
         return data
 
-    def train(self, data, expectation):
+    def train(self, environment):
 
         iteration = 0       # DEBUG
         pts = []
@@ -63,8 +65,7 @@ class Neural(object):
         while not converged:
 
             # Choose a stimulus
-            choice = np.random.randint(len(data))
-            [stimulus, expect] = data[choice], expectation[choice]
+            [stimulus, expect] = environment.sample()
 
             # Layer derivative accumulator
             dr_dr = np.eye(np.shape(self._weights[-1])[0])
@@ -86,7 +87,7 @@ class Neural(object):
                 dr_dr = dr_dr @ self._weights[layer+1] @ np.diag(self.basis.prime(r))
 
                 # Final error derivative
-                dln_dr = self.delta.prime(expect, self.evaluate(stimulus)) / len(data)
+                dln_dr = self.delta.prime(expect, self.evaluate(stimulus)) / environment.shape_input()[0]
 
                 dln_dWvec = dln_dr @ dr_dr @ dr_dWvec
                 dln_dW[layer] += np.reshape(dln_dWvec, np.shape(self._weights[layer]))
@@ -95,14 +96,16 @@ class Neural(object):
                 self._weights[layer] -= self.gamma[layer] * dln_dW[layer]
 
             # Exit condition
-            difference = np.sum(np.abs(expectation - self.evaluate(data.T)))
+            [inputs, expectation] = environment.survey()
+            evaluation = self.evaluate(inputs)
+            difference = np.sum(np.abs(expectation - evaluation.T))
             if difference < self.epsilon:
                 converged = True
 
             if self.debug:
                 pts.append((iteration, difference))
                 if iteration % 25 == 0:
-                    print(str(iteration) + ': ' + str(self.evaluate(data.T)[0]))
+                    print(str(iteration) + ': \n' + str(evaluation))
                     plt.plot(*zip(*pts), marker='.', color=(.9148, .604, .0945))
                     plt.pause(0.00001)
                     pts.clear()

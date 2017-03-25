@@ -1,21 +1,18 @@
 import numpy as np
 from Neural import Neural
 from Function import *
+from Environment import *
 
 np.set_printoptions(suppress=True)
 
+# environment = Logic_Gate(np.array([[0], [1], [1], [0]]))
+environment = Logic_Gate(np.array([[0, 0], [1, 0], [1, 0], [0, 1]]))
+# environment = Logic_Gate(np.array([[1], [0], [0], [1], [1], [0], [1], [0]]))
+
 # ~~~~Learning machine parameters~~~~
-layers = [2, 12, 23, 1]       # Number of nodes per layer
-
-S = np.array([[1, 1],       # Stimuli data  (environment)
-              [0, 1],
-              [1, 0],
-              [0, 0]])
-
-O = np.array([0, 1, 1, 0])  # Output data (expectation)
+layers = [environment.shape_input()[1], 12, 23, 15, environment.shape_output()[1]]     # Number of nodes per layer
 
 # Create the net
-net = Neural(layers, delta=delta_linear, basis=basis_sigmoid, debug=True)
-
-net.train(S, O)
-print(net.evaluate(S.T))
+net = Neural(layers, delta=delta_linear, basis=basis_relu, gamma=[.05, .05, .7, .1], debug=True)
+net.train(environment)
+print(net.evaluate(environment.survey()[0]))
