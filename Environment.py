@@ -44,3 +44,24 @@ class Logic_Gate(Environment):
 
     def shape_output(self):
         return np.shape(self._expectation)
+
+
+class Continuous(Environment):
+
+    def __init__(self, funct, bounds):
+        self._funct = np.vectorize(funct)
+        self._bounds = bounds
+
+    def sample(self):
+        x = np.random.uniform(*self._bounds)
+        return [[x], [self._funct(x)]]
+
+    def survey(self):
+        x = np.linspace(*self._bounds, num=100)
+        return [np.vstack(x), self._funct(x)]
+
+    def shape_input(self):
+        return [1, 1]
+
+    def shape_output(self):
+        return [1, 1]
