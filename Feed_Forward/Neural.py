@@ -31,6 +31,8 @@ class Neural(object):
             gamma = [gamma] * len(units)
         self.gamma = gamma
 
+        self._regularization = regularization
+
         self.epsilon = epsilon
         self.debug = debug
 
@@ -95,13 +97,16 @@ class Neural(object):
                 dln_dWvec = dln_dr @ dr_dr @ dr_dWvec
                 dln_dW[layer] += np.reshape(dln_dWvec, np.shape(self._weights[layer]))
 
+                # Add regularization
+                dln_dW[layer] += self._regularization.prime(self._weights[layer])
+
                 # Update weights
                 self._weights[layer] -= self.gamma[layer] * dln_dW[layer]
 
             # Exit condition
             [inputs, expectation] = environment.survey()
             evaluation = self.evaluate(inputs)
-            difference = np.average(np.abs(expectation - np.fliplr(evaluation.T)))
+            difference = np.average(np.abs(expectation - evaluation.T))
             if difference < self.epsilon:
                 converged = True
 
@@ -124,9 +129,9 @@ class Neural(object):
                     plt.title('Environment')
                     plt.ylim(environment.range())
                     x, y = environment.survey()
+                    plt.plot(x, y, marker='.', color=(0.3559, 0.7196, 0.8637))
                     plt.plot(x, evaluation.T, marker='.', color=(.9148, .604, .0945))
 
-                    plt.plot(x, y)
                     plt.pause(0.00001)
 
                 iteration += 1
