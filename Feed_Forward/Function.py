@@ -23,7 +23,7 @@ basis_relu      = Function(lambda x: piecewise(x, alpha * x, x), lambda x: piece
 basis_exponent  = Function(lambda x: piecewise(x, alpha*(np.exp(x) - 1), x),
                            lambda x: piecewise(x, alpha*np.exp(x), np.ones(np.shape(x))))
 
-basis_sigmoid   = Function(lambda x: tau * (1 + np.exp(-x/tau))**-1, lambda x: np.exp(x/tau)/(np.exp(x/tau) + 1)**2)
+basis_sigmoid   = Function(lambda x: tau * (1 + np.exp(-x/tau))**-1, lambda x: np.exp(-x/tau)/(np.exp(-x/tau) + 1)**2)
 basis_softplus  = Function(lambda x: np.log(1 + np.exp(x)), lambda x: (1 + np.exp(-x))**-1)
 basis_gaussian  = Function(lambda x: np.exp(-x**2), lambda x: -2 * x * np.exp(-x**2))
 

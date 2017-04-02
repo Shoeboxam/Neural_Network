@@ -16,7 +16,8 @@ class Neural(object):
 
     def __init__(self, units,
                  basis=Function.basis_bent, delta=Function.delta_linear,
-                 gamma=1e-2, epsilon=1e-2, regularization=Function.reg_NONE, debug=False):
+                 gamma=1e-2, epsilon=1e-2, regul=Function.reg_NONE, debug=False):
+
         self._weights = []
         for i in range(len(units) - 1):
             self._weights.append((np.random.rand(units[i+1], units[i]) * 2 - 1) / np.sqrt(units[i-1]))
@@ -31,7 +32,7 @@ class Neural(object):
             gamma = [gamma] * len(units)
         self.gamma = gamma
 
-        self._regularization = regularization
+        self.regul = regul
 
         self.epsilon = epsilon
         self.debug = debug
@@ -98,15 +99,15 @@ class Neural(object):
                 dln_dW[layer] += np.reshape(dln_dWvec, np.shape(self._weights[layer]))
 
                 # Add regularization
-                dln_dW[layer] += self._regularization.prime(self._weights[layer])
+                dln_dW[layer] += .01 * self.regul.prime(self._weights[layer])
 
                 # Update weights
-                self._weights[layer] -= self.gamma[layer] * dln_dW[layer]
+                self._weights[layer] -= self.gamma[layer] * (dln_dW[layer])
 
             # Exit condition
             [inputs, expectation] = environment.survey()
-            evaluation = self.evaluate(inputs)
-            difference = np.average(np.abs(expectation - evaluation.T))
+            evaluation = self.evaluate(inputs)[0]
+            difference = np.linalg.norm(expectation.T - evaluation)
             if difference < self.epsilon:
                 converged = True
 
@@ -118,12 +119,11 @@ class Neural(object):
                     print(str(iteration) + ': \n' + str(evaluation))
 
                     plt.subplot(1, 2, 1)
-                    plt.title('Average Error')
+                    plt.title('Error')
                     plt.plot(*zip(*pts), marker='.', color=(.9148, .604, .0945))
                     plt.pause(0.00001)
                     pts.clear()
 
-                    # Create environment plot
                     plt.subplot(1, 2, 2)
                     plt.cla()
                     plt.title('Environment')
