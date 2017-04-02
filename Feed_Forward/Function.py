@@ -44,6 +44,13 @@ delta_linear    = Function(lambda O, P: (O - P)**2,
 delta_logistic  = Function(lambda O, P: (O * np.log(basis_sigmoid(P))) + (1 - O) * np.log(1 - basis_sigmoid(P)),
                            lambda O, P: (basis_sigmoid(P) - O))
 
+# REGULARIZATION FUNCTIONS
+reg_L1   = Function(lambda x: np.linalg.norm(x), lambda x: piecewise(x, -1, 1))
+
+reg_L2   = Function(lambda x: x**2, lambda x: 2*x)
+
+reg_NONE = Function(lambda x: 0, lambda x: 0)
+
 
 def piecewise(x, lower, upper, thresh=0):
 

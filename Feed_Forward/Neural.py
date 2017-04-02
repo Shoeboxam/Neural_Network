@@ -1,6 +1,7 @@
-import numpy as np
-import Function
 import matplotlib.pyplot as plt
+import numpy as np
+
+from Feed_Forward import Function
 
 plt.style.use('fivethirtyeight')
 
@@ -14,13 +15,15 @@ class Neural(object):
     # Convergence: grad, newt *not implemented
 
     def __init__(self, units,
-                 basis=Function.basis_sigmoid, delta=Function.delta_linear,
-                 gamma=1e-2, epsilon=1e-2, debug=False):
+                 basis=Function.basis_bent, delta=Function.delta_linear,
+                 gamma=1e-2, epsilon=1e-2, regularization=Function.reg_NONE, debug=False):
         self._weights = []
         for i in range(len(units) - 1):
             self._weights.append((np.random.rand(units[i+1], units[i]) * 2 - 1) / np.sqrt(units[i-1]))
         self._weights[0] = np.c_[self._weights[0], np.zeros(units[1])]  # Bias units
 
+        if type(basis) != list:
+            basis = [basis] * len(units)
         self.basis = basis
         self.delta = delta
 
@@ -51,8 +54,8 @@ class Neural(object):
             data = self._weights[i] @ data
 
             # Do not transform on the final layer
-            if i != len(self._weights)-1:
-                data = self.basis(data)
+            # if i != len(self._weights)-1:
+            data = self.basis[i](data)
 
         return data
 
@@ -84,7 +87,7 @@ class Neural(object):
                 # reinforcement = W      x s
                 r = self._weights[layer] @ self.evaluate(stimulus, depth=layer)
                 # Interior layer accumulation
-                dr_dr = dr_dr @ self._weights[layer+1] @ np.diag(self.basis.prime(r))
+                dr_dr = dr_dr @ self._weights[layer+1] @ np.diag(self.basis[layer].prime(r))
 
                 # Final error derivative
                 dln_dr = self.delta.prime(expect, self.evaluate(stimulus)) / environment.shape_input()[0]
@@ -98,16 +101,32 @@ class Neural(object):
             # Exit condition
             [inputs, expectation] = environment.survey()
             evaluation = self.evaluate(inputs)
-            difference = np.sum(np.abs(expectation - evaluation.T))
+            difference = np.average(np.abs(expectation - np.fliplr(evaluation.T)))
             if difference < self.epsilon:
                 converged = True
 
             if self.debug:
                 pts.append((iteration, difference))
                 if iteration % 25 == 0:
+
+                    # Output state of machine
                     print(str(iteration) + ': \n' + str(evaluation))
+
+                    plt.subplot(1, 2, 1)
+                    plt.title('Average Error')
                     plt.plot(*zip(*pts), marker='.', color=(.9148, .604, .0945))
                     plt.pause(0.00001)
                     pts.clear()
+
+                    # Create environment plot
+                    plt.subplot(1, 2, 2)
+                    plt.cla()
+                    plt.title('Environment')
+                    plt.ylim(environment.range())
+                    x, y = environment.survey()
+                    plt.plot(x, evaluation.T, marker='.', color=(.9148, .604, .0945))
+
+                    plt.plot(x, y)
+                    plt.pause(0.00001)
 
                 iteration += 1

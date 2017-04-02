@@ -13,6 +13,10 @@ class Environment(object):
         # Return collection of elements and labels from the event environment
         pass
 
+    def range(self):
+        # Return expected upper and lower bounds of output, useful for graphing
+        pass
+
     def shape_input(self):
         # Dimensions of expected input
         pass
@@ -39,6 +43,9 @@ class Logic_Gate(Environment):
     def survey(self):
         return [self._environment, self._expectation]
 
+    def range(self):
+        return [0, 1]
+
     def shape_input(self):
         return np.shape(self._environment)
 
@@ -52,6 +59,9 @@ class Continuous(Environment):
         self._funct = np.vectorize(funct)
         self._bounds = bounds
 
+        candidates = self._funct(np.linspace(*self._bounds, num=100))
+        self._range = [min(candidates), max(candidates)]
+
     def sample(self):
         x = np.random.uniform(*self._bounds)
         return [[x], [self._funct(x)]]
@@ -59,6 +69,9 @@ class Continuous(Environment):
     def survey(self):
         x = np.linspace(*self._bounds, num=100)
         return [np.vstack(x), self._funct(x)]
+
+    def range(self):
+        return self._range
 
     def shape_input(self):
         return [1, 1]
