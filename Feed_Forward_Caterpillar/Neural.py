@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from Feed_Forward import Function
+import Function
 
 plt.style.use('fivethirtyeight')
 
@@ -90,16 +90,16 @@ class Neural(object):
                 # reinforcement = W      x s
                 r = self._weights[layer] @ self.evaluate(stimulus, depth=layer)
                 # Interior layer accumulation
-                dr_dr = dr_dr @ self._weights[layer+1] @ np.diag(self.basis[layer].prime(r))
+                dr_dr = dr_dr @ self._weights[layer+1] @ np.diag(self.basis[layer](r, d=1))
 
                 # Final error derivative
-                dln_dr = self.delta.prime(expect, self.evaluate(stimulus)) / environment.shape_input()[0]
+                dln_dr = self.delta(expect, self.evaluate(stimulus), d=1) / environment.shape_input()[0]
 
                 dln_dWvec = dln_dr @ dr_dr @ dr_dWvec
                 dln_dW[layer] += np.reshape(dln_dWvec, np.shape(self._weights[layer]))
 
                 # Add regularization
-                dln_dW[layer] += .01 * self.regul.prime(self._weights[layer])
+                dln_dW[layer] += .01 * self.regul(self._weights[layer], d=1)
 
                 # Update weights
                 self._weights[layer] -= self.gamma[layer] * (dln_dW[layer])
