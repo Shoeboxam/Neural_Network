@@ -45,13 +45,13 @@ def hierarchy_pos(G, root, width=1., vert_gap = 0.2, vert_loc = 0, xcenter = 0.5
 def hierarchy_render(G):
 
     pos = hierarchy_pos(G, root=0)
-    labels = nx.get_node_attributes(G, 'funct')
+    labels = nx.get_node_attributes(G, 'fun')
 
     for i in labels:
         labels[i] = str(i) + '~' + str(labels[i])
 
     # Delta
-    nodes_delta = [node[0] for node in nx.get_node_attributes(G, 'funct').items() if node[1].usage == 'delta']
+    nodes_delta = [node[0] for node in nx.get_node_attributes(G, 'fun').items() if node[1].usage == 'delta']
     nodes = nx.draw_networkx_nodes(G, pos, nodelist=nodes_delta, node_shape='^', **graphics)
     nodes.set_edgecolor('w')
 
@@ -59,7 +59,7 @@ def hierarchy_render(G):
     nx.draw_networkx_labels(G, pos, nodelist=nodes_delta, labels=label_delta)
 
     # Basis
-    nodes_basis = [node[0] for node in nx.get_node_attributes(G, 'funct').items() if node[1].usage == 'basis']
+    nodes_basis = [node[0] for node in nx.get_node_attributes(G, 'fun').items() if node[1].usage == 'basis']
     nodes = nx.draw_networkx_nodes(G, pos, nodelist=nodes_basis, node_shape='o', **graphics)
     nodes.set_edgecolor('w')
 
@@ -67,7 +67,7 @@ def hierarchy_render(G):
     nx.draw_networkx_labels(G, pos, nodelist=nodes_basis, labels=label_basis)
 
     # Weight
-    nodes_weight = [node[0] for node in nx.get_node_attributes(G, 'funct').items() if node[1].usage == 'weight']
+    nodes_weight = [node[0] for node in nx.get_node_attributes(G, 'fun').items() if node[1].usage == 'weight']
     nodes = nx.draw_networkx_nodes(G, pos, nodelist=nodes_weight, node_shape='s', **graphics)
     nodes.set_edgecolor('w')
 

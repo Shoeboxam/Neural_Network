@@ -73,15 +73,6 @@ reg_L2   = Function('reg', 'L2',
 reg_NONE = Function('reg', 'NONE',
                     [lambda x: 0, lambda x: 0])
 
-# WEIGHT PROPAGATION
-weight_propagate = Function('weight', 'propagate',
-                            [lambda w, s: w @ s,
-                             lambda w, s: np.kron(np.identity(np.shape(w)[0]), s)])
-
-weight_terminal  = Function('weight', 'terminal',
-                            [lambda w: w])
-
-source = Function('source', 'source', [lambda s: s])
 
 def piecewise(x, lower, upper, thresh=0):
 
