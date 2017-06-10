@@ -6,8 +6,8 @@ from Environment import *
 np.set_printoptions(suppress=True)
 
 # ~~~~Learning machine environments~~~~
-env = Continuous(lambda v: (24 * v**4 - 2 * v**2 + v), bounds=[-1, 1])
-# env = Logic_Gate(np.array([[0], [1], [1], [0], [1], [0], [0], [0]]))
+# env = Continuous(lambda v: (24 * v**4 - 2 * v**2 + v), bounds=[-1, 1])
+env = Logic_Gate(np.array([[0], [1], [1], [0], [1], [0], [0], [0]]))
 # env = Logic_Gate(np.array([[0, 0], [1, 0], [1, 0], [0, 1]]))
 # env = Logic_Gate(np.array([[1], [0], [0], [1], [0], [0], [1], [0]]))
 
