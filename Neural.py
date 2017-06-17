@@ -7,16 +7,20 @@ plt.style.use('fivethirtyeight')
 
 
 class Neural(object):
-    # Units: List of quantity of nodes per layer
-    # Basis: sigmoidal, rectilinear
-    # Delta: linear, logistic
-    # Gamma: learning rate
-    # Epsilon: convergence allowance
+    # Units:       List of quantity of nodes per layer
+    # Basis:       sigmoidal, rectilinear...
+    # Delta:       sum squared, cross entropy error
+    # Gamma:       learning parameter
+    # Learn:       learning function
+    # Decay:       weight decay
+    # Epsilon:     convergence allowance
+    # Iterations:  number of iterations to run. If none, then no limit
     # Convergence: grad, newt *not implemented
 
     def __init__(self, units,
-                 basis=Function.basis_bent, delta=Function.delta_linear,
-                 gamma=1e-2, epsilon=1e-2, regul=Function.reg_NONE, debug=False):
+                 basis=Function.basis_bent, delta=Function.delta_sum_squared,
+                 gamma=1e-2, epsilon=1e-2, regul=Function.reg_NONE,
+                 learn=Function.learn_fixed, iterations=None, decay=1.0, debug=False):
 
         self._weights = []
         for i in range(len(units) - 1):
@@ -31,10 +35,13 @@ class Neural(object):
         if type(gamma) == float:
             gamma = [gamma] * len(units)
         self.gamma = gamma
+        self.learn = learn
 
         self.regul = regul
+        self.decay = decay
 
         self.epsilon = epsilon
+        self.iterations = iterations
         self.debug = debug
 
     @property
@@ -64,7 +71,7 @@ class Neural(object):
 
     def train(self, environment):
 
-        iteration = 0       # DEBUG
+        iteration = 0
         pts = []
 
         converged = False
@@ -101,8 +108,11 @@ class Neural(object):
                 # Add regularization
                 dln_dW[layer] += .01 * self.regul(self._weights[layer], d=1)
 
+                # Learning parameter
+                learn_rate = self.learn(iteration, self.iterations) * self.gamma[layer]
+
                 # Update weights
-                self._weights[layer] -= self.gamma[layer] * (dln_dW[layer])
+                self._weights[layer] = self._weights[layer] * self.decay - learn_rate * (dln_dW[layer])
 
             # Exit condition
             [inputs, expectation] = environment.survey()
@@ -135,3 +145,6 @@ class Neural(object):
                     plt.pause(0.00001)
 
                 iteration += 1
+
+            if iteration >= self.iterations:
+                break

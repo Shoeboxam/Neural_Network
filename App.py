@@ -6,8 +6,8 @@ from Environment import *
 np.set_printoptions(suppress=True)
 
 # ~~~~Learning machine environments~~~~
-# env = Continuous(lambda v: (24 * v**4 - 2 * v**2 + v), bounds=[-1, 1])
-env = Logic_Gate(np.array([[0], [1], [1], [0], [1], [0], [0], [0]]))
+env = Continuous(lambda v: (24 * v**4 - 2 * v**2 + v), bounds=[-1, 1])
+# env = Logic_Gate(np.array([[0], [1], [1], [0], [1], [0], [0], [0]]))
 # env = Logic_Gate(np.array([[0, 0], [1, 0], [1, 0], [0, 1]]))
 # env = Logic_Gate(np.array([[1], [0], [0], [1], [0], [0], [1], [0]]))
 
@@ -15,9 +15,12 @@ env = Logic_Gate(np.array([[0], [1], [1], [0], [1], [0], [0], [0]]))
 params = {"units":   [env.shape_input()[1], 23, 20, env.shape_output()[1]],  # shape of network
           "basis":   [basis_bent, basis_bent, basis_bent],                   # choice of bases
           "gamma":   [.01, .01, .01],    # step sizes for each layer
+          "learn":   learn_power,        # learning rate function
+          "decay":   1.0,                # weight decay (0,1]
           "regul":   reg_NONE,           # choice of regularization method
-          "delta":   delta_linear,       # choice of error function
-          "epsilon": .1,                 # error allowance
+          "delta":   delta_sum_squared,  # choice of error function
+          "epsilon": 0.1,                # error allowance
+          "iterations": 1000,            # limit on number of iterations to run
           "debug":   True                # plot graphs
           }
 

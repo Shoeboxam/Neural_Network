@@ -17,10 +17,11 @@ class Function(object):
         return '<' + self.usage + ' ' + self.name + '>'
 
 # PARAMETERS
-tau   = 1       # Sigmoid threshold unit
-alpha = 0       # Parametrized rectified linear unit
+tau   = 1            # Sigmoid threshold unit
+alpha = 0            # Parametrized rectified linear unit
+bank = 50            # Inverse learning function steepness
 
-# BASIS FUNCTIONS
+# BASIS FUNCTIONS: Regression
 basis_identity  = Function('basis', 'identity',
                            [lambda x: x, lambda x: np.ones(np.shape(x))])
 basis_binary    = Function('basis', 'binary',
@@ -31,7 +32,7 @@ basis_exponent  = Function('basis', 'exponent',
                            [lambda x: piecewise(x, alpha*(np.exp(x) - 1), x),
                             lambda x: piecewise(x, alpha*np.exp(x), np.ones(np.shape(x)))])
 
-basis_sigmoid   = Function('basis', 'sigmoid',
+basis_logistic  = Function('basis', 'logistic',
                            [lambda x: tau * (1 + np.exp(-x/tau))**-1, lambda x: np.exp(-x/tau)/(np.exp(-x/tau) + 1)**2])
 basis_softplus  = Function('basis', 'softplus',
                            [lambda x: np.log(1 + np.exp(x)), lambda x: (1 + np.exp(-x))**-1])
@@ -54,12 +55,17 @@ basis_bent      = Function('basis', 'bent',
                            [lambda x: (np.sqrt(x**2 + 1) - 1) / 2 + x, lambda x: x / (2*np.sqrt(x**2 + 1)) + 1])
 
 
+# BASIS FUNCTIONS: Classification
+basis_softmax   = Function('basis', 'SMax',
+                           [lambda O, P: (np.exp(P) / np.sum(np.exp(P)))])
+
+
 # DELTA FUNCTIONS
-delta_linear    = Function('delta', 'SSE',
+delta_sum_squared    = Function('delta', 'SSE',
                            [lambda O, P: (O - P)**2,
                             lambda O, P: -2 * np.transpose(O - P)])
 
-delta_logistic  = Function('delta', 'CEE',
+delta_cross_entropy  = Function('delta', 'CEE',
                            [lambda O, P: (O * np.log(basis_sigmoid(P))) + (1 - O) * np.log(1 - basis_sigmoid(P)),
                             lambda O, P: (basis_sigmoid(P) - O)])
 
@@ -72,6 +78,20 @@ reg_L2   = Function('reg', 'L2',
 
 reg_NONE = Function('reg', 'NONE',
                     [lambda x: 0, lambda x: 0])
+
+
+# LEARNING RATE FUNCTIONS
+learn_fixed   = Function('learn', 'fixed',
+                         [lambda t, i: 1])
+
+learn_linear  = Function('learn', 'linear',
+                         [lambda t, i: 1 - t/i])
+
+learn_inverse = Function('learn', 'inverse',
+                         [lambda t, i: bank / (bank + t)])
+
+learn_power   = Function('learn', 'power',
+                         [lambda t, i: np.exp(t/i)])
 
 
 def piecewise(x, lower, upper, thresh=0):
