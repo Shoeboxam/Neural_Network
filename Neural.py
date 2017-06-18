@@ -19,22 +19,31 @@ class Neural(object):
 
     def __init__(self, units,
                  basis=Function.basis_bent, delta=Function.delta_sum_squared,
-                 gamma=1e-2, epsilon=1e-2, regul=Function.reg_NONE,
+                 gamma=1e-2, gamma_bias=None, epsilon=1e-2, regul=Function.reg_NONE,
                  learn=Function.learn_fixed, iterations=None, decay=1.0, debug=False):
 
         self._weights = []
+        self._biases = []
         for i in range(len(units) - 1):
             self._weights.append((np.random.rand(units[i+1], units[i]) * 2 - 1) / np.sqrt(units[i-1]))
-        self._weights[0] = np.c_[self._weights[0], np.zeros(units[1])]  # Bias units
+            self._biases.append(np.zeros(units[i+1]))
 
-        if type(basis) != list:
+        if type(basis) is not list:
             basis = [basis] * len(units)
         self.basis = basis
         self.delta = delta
 
-        if type(gamma) == float:
+        if type(gamma) is float:
             gamma = [gamma] * len(units)
         self.gamma = gamma
+
+        if gamma_bias is None:
+            gamma_bias = np.array(gamma)
+
+        if type(gamma_bias) is float:
+            gamma_bias = [gamma_bias] * len(units)
+        self.gamma_bias = gamma_bias
+
         self.learn = learn
 
         self.regul = regul
@@ -48,22 +57,23 @@ class Neural(object):
     def weights(self):
         return self._weights
 
-    def evaluate(self, data, depth=-1):
+    def evaluate(self, data, depth=None):
         # Depth can limit evaluation to a certain number of layers in the net
 
-        # Add bias units:
-        if np.ndim(data) == 1:
-            data = np.r_[data, 1]
-        else:
-            data = np.c_[data, np.ones([np.shape(data)[0], 1])].T
-
-        if depth == -1:
+        if depth is None:
             depth = len(self._weights)
 
         for i in range(depth):
-            data = self._weights[i] @ data
 
-            # Do not transform on the final layer
+            # Dimensionality correction if processing a batch
+            if np.ndim(data) == 1:
+                bias = self._biases[i]
+            else:
+                bias = np.tile(self._biases[i][:, np.newaxis], np.shape(data)[1])
+
+            data = self._weights[i] @ data + bias
+
+            # Disable transform on the final layer if computing the final training layer
             # if i != len(self._weights)-1:
             data = self.basis[i](data)
 
@@ -78,10 +88,10 @@ class Neural(object):
         while not converged:
 
             # Choose a stimulus
-            [stimulus, expect] = environment.sample()
+            [stimulus, expect] = map(np.array, environment.sample())
 
             # Layer derivative accumulator
-            dr_dr = np.eye(np.shape(self._weights[-1])[0])
+            dq_dq = np.eye(np.shape(self._weights[-1])[0])
 
             # Delta accumulator
             dln_dW = []
@@ -89,37 +99,53 @@ class Neural(object):
                 dln_dW.append(np.zeros(np.shape(self._weights[i])))
 
             # Train each weight set sequentially
-            for layer in reversed(range(len(self._weights)-1)):
-                dr_dWvec = np.kron(np.identity(np.shape(self._weights[layer])[0]),  # I
-                                   self.evaluate(stimulus, depth=layer).T)          # S' at current layer
+            for layer in reversed(range(len(self._weights))):
 
-                # Notice: input to prediction is dependent on its depth within the net
-                # reinforcement = W      x s
-                r = self._weights[layer] @ self.evaluate(stimulus, depth=layer)
-                # Interior layer accumulation
-                dr_dr = dr_dr @ self._weights[layer+1] @ np.diag(self.basis[layer](r, d=1))
+                # stimulus = value of previous basis function or input stimulus
+                s = self.evaluate(stimulus, depth=layer)
+                # reinforcement = W      x s + b
+                r = self._weights[layer] @ s + self._biases[layer]
 
-                # Final error derivative
-                dln_dr = self.delta(expect, self.evaluate(stimulus), d=1) / environment.shape_input()[0]
+                # Loss function derivative
+                dln_dq = self.delta(expect, self.evaluate(stimulus), d=1) / environment.shape_input()[0]
 
-                dln_dWvec = dln_dr @ dr_dr @ dr_dWvec
+                # Basis function derivative
+                dq_dr = dq_dq @ np.diag(self.basis[layer](r, d=1))
+
+                # Reinforcement function derivative
+                dr_dWvec = np.kron(np.identity(np.shape(self._weights[layer])[0]), s.T)  # S at current layer
+
+                # Chain rule for full derivative
+                dln_dWvec = dln_dq @ dq_dr @ dr_dWvec
+                dln_db = dln_dq @ dq_dr  # * dr_db (Identity matrix)
+
+                # Store derivative accumulation last
+                dr_dq = self._weights[layer]
+                dq_dq = dq_dr @ dr_dq
+
+                # Unvectorize
                 dln_dW[layer] += np.reshape(dln_dWvec, np.shape(self._weights[layer]))
 
                 # Add regularization
-                dln_dW[layer] += .01 * self.regul(self._weights[layer], d=1)
+                regularization = .01 * self.regul(self._weights[layer], d=1)
 
-                # Learning parameter
-                learn_rate = self.learn(iteration, self.iterations) * self.gamma[layer]
+                # Update biases
+                learn_rate = self.learn(iteration, self.iterations) * self.gamma_bias[layer]
+                self._biases[layer] = self._biases[layer] * self.decay - np.array(learn_rate * dln_db)
 
                 # Update weights
-                self._weights[layer] = self._weights[layer] * self.decay - learn_rate * (dln_dW[layer])
+                learn_rate = self.learn(iteration, self.iterations) * self.gamma[layer]
+                self._weights[layer] = self._weights[layer] * self.decay - np.array(learn_rate * dln_dW[layer]) + regularization
 
             # Exit condition
-            [inputs, expectation] = environment.survey()
-            evaluation = self.evaluate(inputs)[0]
+            [inputs, expectation] = map(np.array, environment.survey())
+            evaluation = self.evaluate(inputs.T)[0]
             difference = np.linalg.norm(expectation.T - evaluation)
             if difference < self.epsilon:
                 converged = True
+
+            if self.iterations is not None and iteration >= self.iterations:
+                break
 
             if self.debug:
                 pts.append((iteration, difference))
@@ -145,6 +171,3 @@ class Neural(object):
                     plt.pause(0.00001)
 
                 iteration += 1
-
-            if iteration >= self.iterations:
-                break
