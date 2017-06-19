@@ -8,6 +8,7 @@ class Function(object):
         self._evaluator = evaluators
 
     def __call__(self, *args, d=0):
+        # The optional d parameter is being used to denote power of derivative
         return self._evaluator[d](*args)
 
     def __str__(self):

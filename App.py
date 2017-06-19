@@ -13,11 +13,11 @@ env = Continuous(lambda v: (24 * v**4 - 2 * v**2 + v), bounds=[-1, 1])
 
 # ~~~~Learning machine parameters~~~~
 params = {
-    "units": [env.shape_input()[1], 23, 20, env.shape_output()[1]],  # shape of network
+    "units": [env.shape_input()[1], 23, 20, 10, 15, 12, 22, env.shape_output()[1]],  # shape of network
     "basis": basis_bent,  # choice of bases
 
     # Learning rate function
-    "learn_step": [0.001, 0.001, .001],
+    "learn_step": .0001,
     "learn": learn_power,
 
     # Weight decay regularization function
