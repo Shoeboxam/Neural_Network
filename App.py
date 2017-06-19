@@ -13,7 +13,7 @@ env = Continuous(lambda v: (24 * v**4 - 2 * v**2 + v), bounds=[-1, 1])
 
 # ~~~~Learning machine parameters~~~~
 params = {
-    "units": [env.shape_input()[1], 23, 20, 10, 15, 12, 22, env.shape_output()[1]],  # shape of network
+    "units": [env.shape_input()[1], 23, 20, env.shape_output()[1]],  # shape of network
     "basis": basis_bent,  # choice of bases
 
     # Learning rate function
@@ -22,17 +22,20 @@ params = {
 
     # Weight decay regularization function
     "decay_step": 0.0001,
-    "decay": decay_L2,
+    "decay": decay_NONE,
 
     # Momentum preservation
     "moment_step": .1,
+
+    # Percent of weights to drop each training iteration
+    "dropout": 0.2,
 
     # Error function
     "delta": delta_sum_squared,
 
     "epsilon": 0.1,        # error allowance
-    "iterations": 1500,    # limit on number of iterations to run
-    "debug": True          # plot graphs
+    "iterations": 5000,    # limit on number of iterations to run
+    "debug": True,         # plot graphs
     }
 
 # Create the net
@@ -42,4 +45,4 @@ net = Neural(**params)
 net.train(env)
 
 # Test the net
-print(net.evaluate(env.survey()[0].T))
+print(net.propagate(env.survey()[0].T))

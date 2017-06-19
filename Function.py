@@ -62,8 +62,8 @@ basis_softmax   = Function('basis', 'SMax',
 
 
 # DELTA FUNCTIONS
-delta_sum_squared    = Function('delta', 'SSE',
-                           [lambda O, P: (O - P)**2,
+delta_sum_squared    = Function('delta', 'SSE',  # Same as RSS and SSR
+                           [lambda O, P: sum((O - P)**2),
                             lambda O, P: -2 * np.transpose(O - P)])
 
 delta_cross_entropy  = Function('delta', 'CEE',

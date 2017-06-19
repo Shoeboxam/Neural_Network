@@ -23,7 +23,7 @@ class Neural(object):
                  basis=Function.basis_bent, delta=Function.delta_sum_squared,
                  learn_step=1e-2, learn=Function.learn_fixed,
                  decay_step=1e-2, decay=Function.decay_NONE,
-                 moment_step=1e-1,
+                 moment_step=1e-1, dropout=0,
                  epsilon=1e-2, iterations=None,
                  debug=False):
 
@@ -66,6 +66,8 @@ class Neural(object):
             moment_step = [moment_step] * len(units)
         self.moment_step = moment_step
 
+        self.dropout = dropout
+
         self.epsilon = epsilon
         self.iteration = 0
         self.iteration_limit = iterations
@@ -75,7 +77,23 @@ class Neural(object):
         self._cache_iteration = 0
         self._cache_weights = []
 
-    def evaluate(self, data, depth=None, cache=False):
+    def evaluate(self, data):
+        """Stimulus evaluation function."""
+
+        for i in range(len(self.weights)):
+
+            # Dimensionality correction if processing a batch
+            if np.ndim(data) == 1:
+                bias = self.biases[i]
+            else:
+                bias = np.tile(self.biases[i][:, np.newaxis], np.shape(data)[1])
+
+            #  r = basis(        W               * x    + b)
+            data = self.basis[i](self.weights[i] @ data + bias)
+        return data
+
+    def propagate(self, data, depth=None, cache=False):
+        """Stimulus evaluation function with support for configurable depth, caching and dropout."""
         # Depth can limit evaluation to a certain number of layers in the net
 
         if depth is None:
@@ -107,6 +125,13 @@ class Neural(object):
             else:
                 bias = np.tile(self.biases[i][:, np.newaxis], np.shape(data)[1])
 
+            # Dropout
+            if self.dropout:
+                # Drop nodes from network
+                data *= np.random.binomial(1, (1.0 - self.dropout), size=np.shape(data))
+                # Resize remaining nodes to compensate for loss of nodes
+                data *= (1.0 / (1 - self.dropout))
+
             data = self.weights[i] @ data + bias
             data = self.basis[i](data)
 
@@ -137,17 +162,17 @@ class Neural(object):
             # Layer derivative accumulator
             dq_dq = np.eye(np.shape(self.weights[-1])[0])
 
+            # Loss function derivative
+            dln_dq = self.delta(expect, self.propagate(stimulus, cache=True), d=1) / environment.shape_input()[0]
+
             # Train each weight set sequentially
             for layer in reversed(range(len(self.weights))):
 
                 # ~~~~~~~ Loss derivative phase ~~~~~~~
                 # stimulus = value of previous basis function or input stimulus
-                s = self.evaluate(stimulus, depth=layer)
+                s = self.propagate(stimulus, depth=layer, cache=True)
                 # reinforcement = W      x s + b
                 r = self.weights[layer] @ s + self.biases[layer]
-
-                # Loss function derivative
-                dln_dq = self.delta(expect, self.evaluate(stimulus), d=1) / environment.shape_input()[0]
 
                 # Basis function derivative
                 dq_dr = np.diag(self.basis[layer](r, d=1))
@@ -189,28 +214,35 @@ class Neural(object):
                 dr_dq = self.weights[layer]
                 dq_dq = dq_dq @ dq_dr @ dr_dq
 
-            # Exit condition
-            [inputs, expectation] = map(np.array, environment.survey())
-            evaluation = self.evaluate(inputs.T)[0]
-            difference = np.linalg.norm(expectation.T - evaluation)
-            if difference < self.epsilon:
-                converged = True
+                # Check for oversaturated weights
+                if self.debug:
+                    maximum = max(self.weights[layer].min(), self.weights[layer].max(), key=abs)
+                    if maximum > 1000:
+                        print("Weights are too large: " + str(maximum))
 
+            # Exit condition
             if self.iteration_limit is not None and self.iteration >= self.iteration_limit:
                 break
 
-            if self.debug:
+            if self.iteration % 50 == 0:
+                [inputs, expectation] = map(np.array, environment.survey())
+                evaluation = self.evaluate(inputs.T)[0]
+                difference = np.linalg.norm(expectation.T - evaluation)
                 pts.append((self.iteration, difference))
-                if self.iteration % 25 == 0:
 
-                    # Output state of machine
-                    print(str(self.iteration) + ': \n' + str(evaluation))
+                # Output state of machine
+                # print(str(self.iteration) + ': \n' + str(evaluation))
+
+                if difference < self.epsilon:
+                    converged = True
+
+                if self.debug:
 
                     plt.subplot(1, 2, 1)
+                    plt.cla()
                     plt.title('Error')
                     plt.plot(*zip(*pts), marker='.', color=(.9148, .604, .0945))
                     plt.pause(0.00001)
-                    pts.clear()
 
                     plt.subplot(1, 2, 2)
                     plt.cla()
