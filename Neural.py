@@ -8,19 +8,22 @@ plt.style.use('fivethirtyeight')
 
 class Neural(object):
     # Units:       List of quantity of nodes per layer
-    # Basis:       sigmoidal, rectilinear...
+    # Basis:       logistic, rectilinear...
     # Delta:       sum squared, cross entropy error
-    # Gamma:       learning parameter
+    # Learn step:  learning parameter
     # Learn:       learning function
-    # Decay:       weight decay
+    # Decay step:  weight decay parameter
+    # Decay:       weight decay function
     # Epsilon:     convergence allowance
     # Iterations:  number of iterations to run. If none, then no limit
     # Convergence: grad, newt *not implemented
 
     def __init__(self, units,
                  basis=Function.basis_bent, delta=Function.delta_sum_squared,
-                 gamma=1e-2, gamma_bias=None, epsilon=1e-2, regul=Function.reg_NONE,
-                 learn=Function.learn_fixed, iterations=None, decay=1.0, debug=False):
+                 learn_step=1e-2, learn=Function.learn_fixed,
+                 decay_step=1e-2, decay=Function.decay_NONE,
+                 epsilon=1e-2, iterations=None,
+                 debug=False):
 
         self._weights = []
         self._biases = []
@@ -33,20 +36,21 @@ class Neural(object):
         self.basis = basis
         self.delta = delta
 
-        if type(gamma) is float:
-            gamma = [gamma] * len(units)
-        self.gamma = gamma
-
-        if gamma_bias is None:
-            gamma_bias = np.array(gamma)
-
-        if type(gamma_bias) is float:
-            gamma_bias = [gamma_bias] * len(units)
-        self.gamma_bias = gamma_bias
+        # Learning parameters
+        if type(learn_step) is float:
+            learn_step = [learn_step] * len(units)
+        self.learn_step = learn_step
 
         self.learn = learn
 
-        self.regul = regul
+        # Decay parameters
+        if decay_step is None:
+            decay_step = np.array(learn_step)
+
+        if type(decay_step) is float:
+            decay_step = [decay_step] * len(units)
+        self.decay_step = decay_step
+
         self.decay = decay
 
         self.epsilon = epsilon
@@ -72,9 +76,6 @@ class Neural(object):
                 bias = np.tile(self._biases[i][:, np.newaxis], np.shape(data)[1])
 
             data = self._weights[i] @ data + bias
-
-            # Disable transform on the final layer if computing the final training layer
-            # if i != len(self._weights)-1:
             data = self.basis[i](data)
 
         return data
@@ -83,6 +84,11 @@ class Neural(object):
 
         iteration = 0
         pts = []
+
+        # Momentum memory
+        dln_dW_prev = []
+        for i in range(len(self._weights)):
+            dln_dW_prev.append(np.zeros(np.shape(self._weights[i])))
 
         converged = False
         while not converged:
@@ -93,14 +99,10 @@ class Neural(object):
             # Layer derivative accumulator
             dq_dq = np.eye(np.shape(self._weights[-1])[0])
 
-            # Delta accumulator
-            dln_dW = []
-            for i in range(len(self._weights)):
-                dln_dW.append(np.zeros(np.shape(self._weights[i])))
-
             # Train each weight set sequentially
             for layer in reversed(range(len(self._weights))):
 
+                # ~~~~~~~ Loss derivative phase ~~~~~~~
                 # stimulus = value of previous basis function or input stimulus
                 s = self.evaluate(stimulus, depth=layer)
                 # reinforcement = W      x s + b
@@ -110,32 +112,37 @@ class Neural(object):
                 dln_dq = self.delta(expect, self.evaluate(stimulus), d=1) / environment.shape_input()[0]
 
                 # Basis function derivative
-                dq_dr = dq_dq @ np.diag(self.basis[layer](r, d=1))
+                dq_dr = np.diag(self.basis[layer](r, d=1))
 
                 # Reinforcement function derivative
-                dr_dWvec = np.kron(np.identity(np.shape(self._weights[layer])[0]), s.T)  # S at current layer
+                dr_dWvec = np.kron(np.identity(np.shape(self._weights[layer])[0]), s.T)
 
                 # Chain rule for full derivative
-                dln_dWvec = dln_dq @ dq_dr @ dr_dWvec
-                dln_db = dln_dq @ dq_dr  # * dr_db (Identity matrix)
-
-                # Store derivative accumulation last
-                dr_dq = self._weights[layer]
-                dq_dq = dq_dr @ dr_dq
+                dln_dWvec = dln_dq @ dq_dq @ dq_dr @ dr_dWvec
+                dln_db = dln_dq @ dq_dq @ dq_dr  # @ dr_db (Identity matrix)
 
                 # Unvectorize
-                dln_dW[layer] += np.reshape(dln_dWvec, np.shape(self._weights[layer]))
+                dln_dW = np.reshape(dln_dWvec.T, np.shape(self._weights[layer]))
 
-                # Add regularization
-                regularization = .01 * self.regul(self._weights[layer], d=1)
+                # ~~~~~~~ Gradient descent phase ~~~~~~~
+                # Same for bias and weights
+                learn_rate = self.learn_step[layer] * self.learn(iteration, self.iterations)
 
                 # Update biases
-                learn_rate = self.learn(iteration, self.iterations) * self.gamma_bias[layer]
-                self._biases[layer] = self._biases[layer] * self.decay - np.array(learn_rate * dln_db)
+                decay_biases = self.decay_step[layer] * self.decay(self._biases[layer], d=1)
+                self._biases[layer] -= learn_rate * dln_db - decay_biases
 
                 # Update weights
-                learn_rate = self.learn(iteration, self.iterations) * self.gamma[layer]
-                self._weights[layer] = self._weights[layer] * self.decay - np.array(learn_rate * dln_dW[layer]) + regularization
+                decay_weights = self.decay_step[layer] * self.decay(self._weights[layer], d=1)
+                self._weights[layer] -= learn_rate * dln_dW - decay_weights
+
+                # ~~~~~~~ Update internal state ~~~~~~~
+                # Store derivative accumulation for next layer
+                dr_dq = self._weights[layer]
+                dq_dq = dq_dq @ dq_dr @ dr_dq
+
+                # Store derivative for use in momentum
+                dln_dW_prev[layer] = dln_dW
 
             # Exit condition
             [inputs, expectation] = map(np.array, environment.survey())
@@ -152,7 +159,7 @@ class Neural(object):
                 if iteration % 25 == 0:
 
                     # Output state of machine
-                    print(str(iteration) + ': \n' + str(evaluation))
+                    # print(str(iteration) + ': \n' + str(evaluation))
 
                     plt.subplot(1, 2, 1)
                     plt.title('Error')

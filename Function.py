@@ -69,14 +69,14 @@ delta_cross_entropy  = Function('delta', 'CEE',
                            [lambda O, P: (O * np.log(basis_sigmoid(P))) + (1 - O) * np.log(1 - basis_sigmoid(P)),
                             lambda O, P: (basis_sigmoid(P) - O)])
 
-# REGULARIZATION FUNCTIONS
-reg_L1   = Function('reg', 'L1',
+# REGULARIZATION DECAY FUNCTIONS
+decay_L1   = Function('decay', 'L1',
                     [lambda x: np.linalg.norm(x), lambda x: piecewise(x, -1, 1)])
 
-reg_L2   = Function('reg', 'L2',
-                    [lambda x: x**2, lambda x: 2*x])
+decay_L2   = Function('decay', 'L2',
+                    [lambda x: x.T @ x, lambda x: 2*x])
 
-reg_NONE = Function('reg', 'NONE',
+decay_NONE = Function('decay', 'NONE',
                     [lambda x: 0, lambda x: 0])
 
 
@@ -91,7 +91,10 @@ learn_inverse = Function('learn', 'inverse',
                          [lambda t, i: bank / (bank + t)])
 
 learn_power   = Function('learn', 'power',
-                         [lambda t, i: np.exp(t/i)])
+                         [lambda t, i: np.exp(t/i) - 1])
+
+learn_invroot = Function('learn', 'invroot',
+                         [lambda t, i: bank / np.sqrt(t)])
 
 
 def piecewise(x, lower, upper, thresh=0):
