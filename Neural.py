@@ -14,6 +14,7 @@ class Neural(object):
     # Learn:       learning function
     # Decay step:  weight decay parameter
     # Decay:       weight decay function
+    # Moment step: momentum strength parameter
     # Epsilon:     convergence allowance
     # Iterations:  number of iterations to run. If none, then no limit
     # Convergence: grad, newt *not implemented
@@ -22,6 +23,7 @@ class Neural(object):
                  basis=Function.basis_bent, delta=Function.delta_sum_squared,
                  learn_step=1e-2, learn=Function.learn_fixed,
                  decay_step=1e-2, decay=Function.decay_NONE,
+                 moment_step=1e-1,
                  epsilon=1e-2, iterations=None,
                  debug=False):
 
@@ -52,6 +54,14 @@ class Neural(object):
         self.decay_step = decay_step
 
         self.decay = decay
+
+        # Moment parameters
+        if moment_step is None:
+            moment_step = np.array(learn_step)
+
+        if type(moment_step) is float:
+            moment_step = [moment_step] * len(units)
+        self.moment_step = moment_step
 
         self.epsilon = epsilon
         self.iterations = iterations
@@ -86,12 +96,15 @@ class Neural(object):
         pts = []
 
         # Momentum memory
-        dln_dW_prev = []
+        weight_update = []
+        bias_update = []
         for i in range(len(self._weights)):
-            dln_dW_prev.append(np.zeros(np.shape(self._weights[i])))
+            weight_update.append(np.zeros(np.shape(self._weights[i])))
+            bias_update.append(np.zeros(np.shape(self._biases[i])))
 
         converged = False
         while not converged:
+            iteration += 1
 
             # Choose a stimulus
             [stimulus, expect] = map(np.array, environment.sample())
@@ -126,23 +139,30 @@ class Neural(object):
 
                 # ~~~~~~~ Gradient descent phase ~~~~~~~
                 # Same for bias and weights
-                learn_rate = self.learn_step[layer] * self.learn(iteration, self.iterations)
+                learn_rate = self.learn(iteration, self.iterations)
 
-                # Update biases
-                decay_biases = self.decay_step[layer] * self.decay(self._biases[layer], d=1)
-                self._biases[layer] -= learn_rate * dln_db - decay_biases
+                # Compute bias update
+                bias_gradient = -self.learn_step[layer] * dln_db
+                bias_decay = self.decay_step[layer] * self.decay(self._biases[layer], d=1)
+                bias_momentum = self.moment_step[layer] * bias_update[layer]
 
-                # Update weights
-                decay_weights = self.decay_step[layer] * self.decay(self._weights[layer], d=1)
-                self._weights[layer] -= learn_rate * dln_dW - decay_weights
+                bias_update[layer] = learn_rate * (bias_gradient + bias_decay) + bias_momentum
+
+                # Compute weight update
+                weight_gradient = -self.learn_step[layer] * dln_dW
+                weight_decay = self.decay_step[layer] * self.decay(self._weights[layer], d=1)
+                weight_momentum = self.moment_step[layer] * weight_update[layer]
+
+                weight_update[layer] = learn_rate * (weight_gradient + weight_decay) + weight_momentum
+
+                # Apply gradient descent
+                self._biases[layer] += bias_update[layer]
+                self._weights[layer] += weight_update[layer]
 
                 # ~~~~~~~ Update internal state ~~~~~~~
                 # Store derivative accumulation for next layer
                 dr_dq = self._weights[layer]
                 dq_dq = dq_dq @ dq_dr @ dr_dq
-
-                # Store derivative for use in momentum
-                dln_dW_prev[layer] = dln_dW
 
             # Exit condition
             [inputs, expectation] = map(np.array, environment.survey())
@@ -159,7 +179,7 @@ class Neural(object):
                 if iteration % 25 == 0:
 
                     # Output state of machine
-                    # print(str(iteration) + ': \n' + str(evaluation))
+                    print(str(iteration) + ': \n' + str(evaluation))
 
                     plt.subplot(1, 2, 1)
                     plt.title('Error')
@@ -176,5 +196,3 @@ class Neural(object):
                     plt.plot(x, evaluation.T, marker='.', color=(.9148, .604, .0945))
 
                     plt.pause(0.00001)
-
-                iteration += 1

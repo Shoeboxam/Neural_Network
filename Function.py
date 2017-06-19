@@ -18,7 +18,7 @@ class Function(object):
 
 # PARAMETERS
 tau   = 1            # Sigmoid threshold unit
-alpha = 0            # Parametrized rectified linear unit
+alpha = 0.5            # Parametrized rectified linear unit
 bank = 50            # Inverse learning function steepness
 
 # BASIS FUNCTIONS: Regression
@@ -33,7 +33,7 @@ basis_exponent  = Function('basis', 'exponent',
                             lambda x: piecewise(x, alpha*np.exp(x), np.ones(np.shape(x)))])
 
 basis_logistic  = Function('basis', 'logistic',
-                           [lambda x: tau * (1 + np.exp(-x/tau))**-1, lambda x: np.exp(-x/tau)/(np.exp(-x/tau) + 1)**2])
+                           [lambda x: tau * (1 + np.exp(-x/tau))**-1, lambda x: np.exp(x/tau)/(np.exp(x/tau) + 1)**2])
 basis_softplus  = Function('basis', 'softplus',
                            [lambda x: np.log(1 + np.exp(x)), lambda x: (1 + np.exp(-x))**-1])
 basis_gaussian  = Function('basis', 'gaussian',
@@ -91,10 +91,10 @@ learn_inverse = Function('learn', 'inverse',
                          [lambda t, i: bank / (bank + t)])
 
 learn_power   = Function('learn', 'power',
-                         [lambda t, i: np.exp(t/i) - 1])
+                         [lambda t, i: np.exp(t/i)])
 
 learn_invroot = Function('learn', 'invroot',
-                         [lambda t, i: bank / np.sqrt(t)])
+                         [lambda t, i: 1 / np.sqrt(t)])
 
 
 def piecewise(x, lower, upper, thresh=0):
