@@ -10,22 +10,8 @@ class Neural(object):
     # Units:       List of quantity of nodes per layer
     # Basis:       logistic, rectilinear...
     # Delta:       sum squared, cross entropy error
-    # Learn step:  learning parameter
-    # Learn:       learning function
-    # Decay step:  weight decay parameter
-    # Decay:       weight decay function
-    # Moment step: momentum strength parameter
-    # Epsilon:     convergence allowance
-    # Iterations:  number of iterations to run. If none, then no limit
-    # Convergence: grad, newt *not implemented
 
-    def __init__(self, units,
-                 basis=Function.basis_bent, delta=Function.delta_sum_squared,
-                 learn_step=1e-2, learn=Function.learn_fixed,
-                 decay_step=1e-2, decay=Function.decay_NONE,
-                 moment_step=1e-1, dropout=0,
-                 epsilon=1e-2, iterations=None,
-                 debug=False):
+    def __init__(self, units, basis=Function.basis_bent, delta=Function.delta_sum_squared):
 
         # Weight and bias initialization. Initial random numbers are scaled by layer size.
         self.weights = []
@@ -41,44 +27,8 @@ class Neural(object):
 
         self.delta = delta
 
-        # Learning parameters
-        if type(learn_step) is float:
-            learn_step = [learn_step] * len(units)
-        self.learn_step = learn_step
-
-        self.learn = learn
-
-        # Decay parameters
-        if decay_step is None:
-            decay_step = np.array(learn_step)
-
-        if type(decay_step) is float:
-            decay_step = [decay_step] * len(units)
-        self.decay_step = decay_step
-
-        self.decay = decay
-
-        # Moment parameters
-        if moment_step is None:
-            moment_step = np.array(learn_step)
-
-        if type(moment_step) is float:
-            moment_step = [moment_step] * len(units)
-        self.moment_step = moment_step
-
-        self.dropout = dropout
-
-        self.epsilon = epsilon
-        self.iteration = 0
-        self.iteration_limit = iterations
-        self.debug = debug
-
-        # Internal variables to reduce time complexity of training deep nets
-        self._cache_iteration = 0
-        self._cache_weights = []
-
-    def evaluate(self, data):
-        """Stimulus evaluation function."""
+    def predict(self, data):
+        """Stimulus evaluation"""
 
         for i in range(len(self.weights)):
 
@@ -92,57 +42,104 @@ class Neural(object):
             data = self.basis[i](self.weights[i] @ data + bias)
         return data
 
-    def propagate(self, data, depth=None, cache=False):
-        """Stimulus evaluation function with support for configurable depth, caching and dropout."""
-        # Depth can limit evaluation to a certain number of layers in the net
+    # Environment: class with a 'sample stimulus' method
+    # Learn step:  learning parameter
+    # Learn:       learning function
+    # Decay step:  weight decay parameter
+    # Decay:       weight decay function
+    # Moment step: momentum strength parameter
+    # Dropout:     percent of nodes to drop from each layer
+    # Epsilon:     convergence allowance
+    # Iterations:  number of iterations to run. If none, then no limit
+    # Debug:       make graphs and log progress to console
+    # Convergence: grad, newt *not implemented
 
-        if depth is None:
-            depth = len(self.weights)
+    def train(self, environment,
+              learn_step=1e-2, learn=Function.learn_fixed,
+              decay_step=1e-2, decay=Function.decay_NONE,
+              moment_step=1e-1, dropout=0,
+              epsilon=1e-2, iteration_limit=None,
+              debug=False):
 
-        root = 0
+        # ~~~ Setup parameters ~~~
 
-        # Early return if weight set already computed
-        if cache is True:
-            # Check for validity of cached weights
-            if self.iteration == self._cache_iteration:
+        # Learning parameters
+        if type(learn_step) is float:
+            learn_step = [learn_step] * len(self.weights)
 
-                # Check if cache has been computed to necessary depth
-                if depth < len(self._cache_weights):
-                    return self._cache_weights[depth]
+        # Decay parameters
+        if decay_step is None:
+            decay_step = learn_step
+
+        if type(decay_step) is float:
+            decay_step = [decay_step] * len(self.weights)
+
+        # Moment parameters
+        if moment_step is None:
+            moment_step = learn_step
+
+        if type(moment_step) is float:
+            moment_step = [moment_step] * len(self.weights)
+
+        # ~~~ Define propagation within net ~~~
+
+        # Internal variables to reduce time complexity of training deep nets
+        cache_iteration = 0
+        cache_weights = []
+
+        def propagate(data, depth=None, cache=False):
+            """Stimulus evaluation with support for configurable depth, caching and dropout."""
+            # Depth can limit evaluation to a certain number of layers in the net
+
+            nonlocal cache_iteration
+            nonlocal cache_weights
+
+            if depth is None:
+                depth = len(self.weights)
+
+            root = 0
+
+            # Early return if weight set already computed
+            if cache is True:
+                # Check for validity of cached weights
+                if iteration == cache_iteration:
+
+                    # Check if cache has been computed to necessary depth
+                    if depth < len(cache_weights):
+                        return cache_weights[depth]
+                    else:
+                        root = len(cache_weights) - 1
+                        data = cache_iteration[root]
+
                 else:
-                    root = len(self._cache_weights) - 1
-                    data = self._cache_iteration[root]
+                    # Cache has been invalidated
+                    cache_weights = []
 
-            else:
-                # Cache has been invalidated
-                self._cache_weights = []
+            for i in range(root, depth):
 
-        for i in range(root, depth):
+                # Dimensionality correction if processing a batch
+                if np.ndim(data) == 1:
+                    bias = self.biases[i]
+                else:
+                    bias = np.tile(self.biases[i][:, np.newaxis], np.shape(data)[1])
 
-            # Dimensionality correction if processing a batch
-            if np.ndim(data) == 1:
-                bias = self.biases[i]
-            else:
-                bias = np.tile(self.biases[i][:, np.newaxis], np.shape(data)[1])
+                # Dropout
+                if dropout:
+                    # Drop nodes from network
+                    data *= np.random.binomial(1, (1.0 - dropout), size=np.shape(data))
+                    # Resize remaining nodes to compensate for loss of nodes
+                    data *= (1.0 / (1 - dropout))
 
-            # Dropout
-            if self.dropout:
-                # Drop nodes from network
-                data *= np.random.binomial(1, (1.0 - self.dropout), size=np.shape(data))
-                # Resize remaining nodes to compensate for loss of nodes
-                data *= (1.0 / (1 - self.dropout))
+                data = self.weights[i] @ data + bias
+                data = self.basis[i](data)
 
-            data = self.weights[i] @ data + bias
-            data = self.basis[i](data)
+                if cache:
+                    cache_weights.append(data)
 
-            if cache:
-                self._cache_weights.append(data)
+            return data
 
-        return data
-
-    def train(self, environment):
-
-        self.iteration = 0
+        # ~~~ Actual training portion ~~~
+        iteration = 0
         pts = []
 
         # Momentum memory
@@ -154,7 +151,7 @@ class Neural(object):
 
         converged = False
         while not converged:
-            self.iteration += 1
+            iteration += 1
 
             # Choose a stimulus
             [stimulus, expect] = map(np.array, environment.sample())
@@ -163,14 +160,14 @@ class Neural(object):
             dq_dq = np.eye(np.shape(self.weights[-1])[0])
 
             # Loss function derivative
-            dln_dq = self.delta(expect, self.propagate(stimulus, cache=True), d=1) / environment.shape_input()[0]
+            dln_dq = self.delta(expect, propagate(stimulus, cache=True), d=1) / environment.shape_input()[0]
 
             # Train each weight set sequentially
             for layer in reversed(range(len(self.weights))):
 
                 # ~~~~~~~ Loss derivative phase ~~~~~~~
                 # stimulus = value of previous basis function or input stimulus
-                s = self.propagate(stimulus, depth=layer, cache=True)
+                s = propagate(stimulus, depth=layer, cache=True)
                 # reinforcement = W      x s + b
                 r = self.weights[layer] @ s + self.biases[layer]
 
@@ -189,19 +186,19 @@ class Neural(object):
 
                 # ~~~~~~~ Gradient descent phase ~~~~~~~
                 # Same for bias and weights
-                learn_rate = self.learn(self.iteration, self.iteration_limit)
+                learn_rate = learn(iteration, iteration_limit)
 
                 # Compute bias update
-                bias_gradient = -self.learn_step[layer] * dln_db
-                bias_decay = self.decay_step[layer] * self.decay(self.biases[layer], d=1)
-                bias_momentum = self.moment_step[layer] * bias_update[layer]
+                bias_gradient = -learn_step[layer] * dln_db
+                bias_decay = decay_step[layer] * decay(self.biases[layer], d=1)
+                bias_momentum = moment_step[layer] * bias_update[layer]
 
                 bias_update[layer] = learn_rate * (bias_gradient + bias_decay) + bias_momentum
 
                 # Compute weight update
-                weight_gradient = -self.learn_step[layer] * dln_dW
-                weight_decay = self.decay_step[layer] * self.decay(self.weights[layer], d=1)
-                weight_momentum = self.moment_step[layer] * weight_update[layer]
+                weight_gradient = -learn_step[layer] * dln_dW
+                weight_decay = decay_step[layer] * decay(self.weights[layer], d=1)
+                weight_momentum = moment_step[layer] * weight_update[layer]
 
                 weight_update[layer] = learn_rate * (weight_gradient + weight_decay) + weight_momentum
 
@@ -215,28 +212,28 @@ class Neural(object):
                 dq_dq = dq_dq @ dq_dr @ dr_dq
 
                 # Check for oversaturated weights
-                if self.debug:
+                if debug:
                     maximum = max(self.weights[layer].min(), self.weights[layer].max(), key=abs)
                     if maximum > 1000:
                         print("Weights are too large: " + str(maximum))
 
             # Exit condition
-            if self.iteration_limit is not None and self.iteration >= self.iteration_limit:
+            if iteration_limit is not None and iteration >= iteration_limit:
                 break
 
-            if self.iteration % 50 == 0:
+            if iteration % 50 == 0:
                 [inputs, expectation] = map(np.array, environment.survey())
-                evaluation = self.evaluate(inputs.T)[0]
+                evaluation = self.predict(inputs.T)[0]
                 difference = np.linalg.norm(expectation.T - evaluation)
-                pts.append((self.iteration, difference))
+                pts.append((iteration, difference))
 
                 # Output state of machine
                 # print(str(self.iteration) + ': \n' + str(evaluation))
 
-                if difference < self.epsilon:
+                if difference < epsilon:
                     converged = True
 
-                if self.debug:
+                if debug:
 
                     plt.subplot(1, 2, 1)
                     plt.cla()
