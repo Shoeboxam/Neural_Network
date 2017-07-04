@@ -59,9 +59,9 @@ class Neural(object):
               decay_step=1e-2, decay=Function.decay_NONE,
               moment_step=1e-1, dropout=0,
               epsilon=1e-2, iteration_limit=None,
-              debug=False):
+              debug=False, graph=False):
 
-        # ~~~ Setup parameters ~~~
+        # --- Setup parameters ---
 
         # Learning parameters
         if type(learn_step) is float:
@@ -81,7 +81,7 @@ class Neural(object):
         if type(moment_step) is float:
             moment_step = [moment_step] * len(self.weights)
 
-        # ~~~ Define propagation within net ~~~
+        # --- Define propagation within net ---
 
         # Internal variables to reduce time complexity of training deep nets
         cache_iteration = 0
@@ -138,7 +138,7 @@ class Neural(object):
 
             return data
 
-        # ~~~ Actual training portion ~~~
+        # --- Actual training portion ---
         iteration = 0
         pts = []
 
@@ -160,7 +160,7 @@ class Neural(object):
             dq_dq = np.eye(np.shape(self.weights[-1])[0])
 
             # Loss function derivative
-            dln_dq = self.delta(expect, propagate(stimulus, cache=True), d=1) / environment.shape_input()[0]
+            dln_dq = self.delta(expect, propagate(stimulus, cache=True), d=1) / environment.size_input()
 
             # Train each weight set sequentially
             for layer in reversed(range(len(self.weights))):
@@ -217,11 +217,17 @@ class Neural(object):
                     if maximum > 1000:
                         print("Weights are too large: " + str(maximum))
 
+            # --- Debugging and graphing ---
+            if debug:
+                print("Iteration: " + str(iteration))
+                print(self.predict(stimulus)[0] * 10)
+                print(expect)
+
             # Exit condition
             if iteration_limit is not None and iteration >= iteration_limit:
                 break
 
-            if iteration % 50 == 0:
+            if graph or (epsilon and iteration % 50 == 0):
                 [inputs, expectation] = map(np.array, environment.survey())
                 evaluation = self.predict(inputs.T)[0]
                 difference = np.linalg.norm(expectation.T - evaluation)
@@ -233,7 +239,7 @@ class Neural(object):
                 if difference < epsilon:
                     converged = True
 
-                if debug:
+                if graph:
 
                     plt.subplot(1, 2, 1)
                     plt.cla()

@@ -6,7 +6,8 @@ from Environment import *
 np.set_printoptions(suppress=True)
 
 # Select an environment
-env = Continuous(lambda v: (24 * v**4 - 2 * v**2 + v), bounds=[-1, 1])
+env = MNIST()
+# env = Continuous(lambda v: (24 * v**4 - 2 * v**2 + v), bounds=[-1, 1])
 # env = Logic_Gate(np.array([[0], [1], [1], [0], [1], [0], [0], [0]]))
 # env = Logic_Gate(np.array([[0, 0], [1, 0], [1, 0], [0, 1]]))
 # env = Logic_Gate(np.array([[1], [0], [0], [1], [0], [0], [1], [0]]))
@@ -14,7 +15,7 @@ env = Continuous(lambda v: (24 * v**4 - 2 * v**2 + v), bounds=[-1, 1])
 # ~~~ Create the network ~~~
 init_params = {
     # Shape of network
-    "units": [env.shape_input()[1], 23, 20, env.shape_output()[1]],
+    "units": [env.size_input(), 10, env.size_output()],
 
     # Basis function(s) from Function.py
     "basis": basis_bent,

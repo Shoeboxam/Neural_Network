@@ -3,3 +3,4 @@
 *.pyc
 keyfile.txt
 .idea/
+data/
