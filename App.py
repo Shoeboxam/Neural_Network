@@ -15,13 +15,13 @@ env = MNIST()
 # ~~~ Create the network ~~~
 init_params = {
     # Shape of network
-    "units": [env.size_input(), 10, env.size_output()],
+    "units": [env.size_input(), 20, env.size_output()],
 
     # Basis function(s) from Function.py
-    "basis": basis_bent,
+    "basis": [basis_bent, basis_softmax],
 
     # Error function from Function.py
-    "delta": delta_sum_squared
+    "delta": delta_cross_entropy
     }
 
 net = Neural(**init_params)
@@ -33,21 +33,23 @@ train_params = {
 
     # Learning rate function
     "learn_step": .0001,
-    "learn": learn_power,
+    "learn": learn_fixed,
 
     # Weight decay regularization function
     "decay_step": 0.0001,
     "decay": decay_NONE,
 
     # Momentum preservation
-    "moment_step": .1,
+    "moment_step": 0,
 
     # Percent of weights to drop each training iteration
-    "dropout": 0.2,
+    "dropout": 0,
 
-    "epsilon": 0.1,           # error allowance
-    "iteration_limit": 5000,  # limit on number of iterations to run
-    "debug": True             # plot graphs
+    "epsilon": None,           # error allowance
+    "iteration_limit": 500000,  # limit on number of iterations to run
+
+    "debug": True,
+    "graph": False
     }
 
 net.train(**train_params)

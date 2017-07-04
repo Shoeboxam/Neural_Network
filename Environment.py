@@ -134,7 +134,12 @@ class MNIST(Environment):
     def _load_labels(file_name):
         with open(file_name, 'rb') as label_file:
             label_file.read(8)  # Ignore header info for file type and number of entries
-            return np.fromfile(label_file, dtype=np.int8)
+            integer_matrix = np.fromfile(label_file, dtype=np.int8)
+
+            # Convert to one-hot format
+            bool_matrix = np.zeros((np.size(integer_matrix), 10))
+            bool_matrix[np.arange(np.size(integer_matrix)), integer_matrix] = True
+            return bool_matrix
 
     def sample(self):
         x = np.random.randint(np.size(self.train_images[0]))

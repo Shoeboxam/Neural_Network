@@ -64,21 +64,21 @@ class Neural(object):
         # --- Setup parameters ---
 
         # Learning parameters
-        if type(learn_step) is float:
+        if type(learn_step) is float or type(learn_step) is int:
             learn_step = [learn_step] * len(self.weights)
 
         # Decay parameters
         if decay_step is None:
             decay_step = learn_step
 
-        if type(decay_step) is float:
+        if type(decay_step) is float or type(decay_step) is int:
             decay_step = [decay_step] * len(self.weights)
 
         # Moment parameters
         if moment_step is None:
             moment_step = learn_step
 
-        if type(moment_step) is float:
+        if type(moment_step) is float or type(moment_step) is int:
             moment_step = [moment_step] * len(self.weights)
 
         # --- Define propagation within net ---
@@ -172,7 +172,7 @@ class Neural(object):
                 r = self.weights[layer] @ s + self.biases[layer]
 
                 # Basis function derivative
-                dq_dr = np.diag(self.basis[layer](r, d=1))
+                dq_dr = self.basis[layer](r, d=1)
 
                 # Reinforcement function derivative
                 dr_dWvec = np.kron(np.identity(np.shape(self.weights[layer])[0]), s.T)
@@ -219,15 +219,16 @@ class Neural(object):
 
             # --- Debugging and graphing ---
             if debug:
-                print("Iteration: " + str(iteration))
-                print(self.predict(stimulus)[0] * 10)
-                print(expect)
+                predict_id = str(np.argmax(self.predict(stimulus)))
+                expect_id = str(np.argmax(expect))
+                equality = str(predict_id == expect_id)
+                print("Iteration: " + str(iteration) + ' P:O::' + predict_id + ':' + expect_id + '->' + equality)
 
             # Exit condition
             if iteration_limit is not None and iteration >= iteration_limit:
                 break
 
-            if graph or (epsilon and iteration % 50 == 0):
+            if (graph or epsilon) and iteration % 50 == 0:
                 [inputs, expectation] = map(np.array, environment.survey())
                 evaluation = self.predict(inputs.T)[0]
                 difference = np.linalg.norm(expectation.T - evaluation)
