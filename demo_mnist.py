@@ -1,6 +1,4 @@
-import itertools
-import math
-import numpy as np
+from Neural_Network import *
 
 import urllib.request
 from io import BytesIO
@@ -8,97 +6,11 @@ import os
 import gzip
 import struct
 
-
-class Environment(object):
-
-    def sample(self):
-        # Return a single element and label from the event environment
-        pass
-
-    def survey(self):
-        # Return collection of elements and labels from the event environment
-        pass
-
-    def range(self):
-        # Return expected upper and lower bounds of output, useful for graphing
-        pass
-
-    def size_input(self):
-        # Number of input nodes
-        pass
-
-    def size_output(self):
-        # Number of output nodes
-        pass
-
-    @staticmethod
-    def error(expect, predict):
-        # How to quantify error
-        pass
-
-class Logic_Gate(Environment):
-
-    def __init__(self, expectation):
-        bit_length = math.log(np.shape(expectation)[0], 2)
-        if bit_length % 1 != 0:
-            raise TypeError('Length of expectation must be a power of two.')
-
-        self._expectation = expectation
-        self._environment = np.array([i for i in itertools.product([0, 1], repeat=int(bit_length))])
-
-    def sample(self):
-        choice = np.random.randint(np.shape(self._environment)[0])
-        return self._environment[choice], self._expectation[choice]
-
-    def survey(self):
-        return [self._environment, self._expectation]
-
-    def range(self):
-        return [0, 1]
-
-    def size_input(self):
-        return np.shape(self._environment)[1]
-
-    def size_output(self):
-        return np.shape(self._expectation)[0]
-
-    @staticmethod
-    def error(expect, predict):
-        return np.linalg.norm(expect.T - predict)
+import numpy as np
+np.set_printoptions(suppress=True)
 
 
-class Continuous(Environment):
-
-    def __init__(self, funct, bounds):
-        self._funct = np.vectorize(funct)
-        self._bounds = bounds
-
-        candidates = self._funct(np.linspace(*self._bounds, num=100))
-        self._range = [min(candidates), max(candidates)]
-
-    def sample(self):
-        x = np.random.uniform(*self._bounds)
-        return [[x], [self._funct(x)]]
-
-    def survey(self):
-        x = np.linspace(*self._bounds, num=100)
-        return [np.vstack(x), self._funct(x)]
-
-    def range(self):
-        return self._range
-
-    def size_input(self):
-        return 1
-
-    def size_output(self):
-        return 1
-
-    @staticmethod
-    def error(expect, predict):
-        return np.linalg.norm(expect.T - predict)
-
-
-class MNIST(Environment):
+class MNIST:
     def __init__(self):
         source = 'http://yann.lecun.com/exdb/mnist'
         target = os.path.abspath('./data/MNIST/')
@@ -158,7 +70,7 @@ class MNIST(Environment):
         return [self.train_images[x], self.train_labels[x]]
 
     def survey(self):
-        x = np.random.randint(np.size(self.test_images[0]), size=50)  # Changes error granularity
+        x = np.random.randint(np.size(self.test_images[0]), size=50)  # Size changes error granularity
         return [self.test_images[x], self.test_labels[x]]
 
     def range(self):
@@ -170,8 +82,63 @@ class MNIST(Environment):
     def size_output(self):
         return np.size(self.train_labels[0])
 
+    def plot(self, plt, predict):
+        # Do not attempt to plot an image
+        pass
+
     @staticmethod
     def error(expect, predict):
         predict_id = np.argmax(predict, axis=1)
         expect_id = np.argmax(expect, axis=1)
         return 1.0 - np.mean((predict_id == expect_id).astype(float))
+
+
+environment = MNIST()
+
+# ~~~ Create the network ~~~
+init_params = {
+    # Shape of network
+    "units": [environment.size_input(), 20, environment.size_output()],
+
+    # Basis function(s) from Function.py
+    "basis": [basis_bent, basis_softmax],
+
+    # Error function from Function.py
+    "delta": delta_cross_entropy
+    }
+
+network = Neural_Network(**init_params)
+
+# ~~~ Train the network ~~~
+train_params = {
+    # Source of stimuli
+    "environment": environment,
+
+    # Learning rate function
+    "learn_step": .5,
+    "learn": learn_fixed,
+
+    # Weight decay regularization function
+    "decay_step": 0.0001,
+    "decay": decay_NONE,
+
+    # Momentum preservation
+    "moment_step": 0,
+
+    # Percent of weights to drop each training iteration
+    "dropout": 0,
+
+    "epsilon": .04,           # error allowance
+    "iteration_limit": 500000,  # limit on number of iterations to run
+
+    "debug": True,
+
+    # The error measurement used in the mnist graph is highly susceptible to sampling error
+    "graph": False
+    }
+
+network.train(**train_params)
+
+# ~~~ Test the network ~~~
+[stimuli, expectation] = environment.survey()
+print(network.predict(stimuli.T))

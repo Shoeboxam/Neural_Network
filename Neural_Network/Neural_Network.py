@@ -1,12 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-import Function
+from . import Function
 
 plt.style.use('fivethirtyeight')
 
 
-class Neural(object):
+class Neural_Network(object):
     # Units:       List of quantity of nodes per layer
     # Basis:       logistic, rectilinear...
     # Delta:       sum squared, cross entropy error
@@ -115,23 +115,23 @@ class Neural(object):
                     # Cache has been invalidated
                     cache_weights = []
 
-            for i in range(root, depth):
+            for layer_id in range(root, depth):
 
                 # Dimensionality correction if processing a batch
                 if np.ndim(data) == 1:
-                    bias = self.biases[i]
+                    bias = self.biases[layer_id]
                 else:
-                    bias = np.tile(self.biases[i][:, np.newaxis], np.shape(data)[1])
+                    bias = np.tile(self.biases[layer_id][:, np.newaxis], np.shape(data)[1])
 
                 # Dropout
                 if dropout:
                     # Drop nodes from network
                     data *= np.random.binomial(1, (1.0 - dropout), size=np.shape(data))
                     # Resize remaining nodes to compensate for loss of nodes
-                    data *= (1.0 / (1 - dropout))
+                    data = data.astype(float) * (1.0 / (1 - dropout))
 
-                data = self.weights[i] @ data + bias
-                data = self.basis[i](data)
+                data = self.weights[layer_id] @ data + bias
+                data = self.basis[layer_id](data)
 
                 if cache:
                     cache_weights.append(data)
@@ -232,6 +232,8 @@ class Neural(object):
 
                 if debug:
                     print("Error: " + str(error))
+                    # print(expectation)
+                    # print(prediction)
 
                 if graph:
                     pts.append((iteration, error))
@@ -245,9 +247,8 @@ class Neural(object):
                     plt.subplot(1, 2, 2)
                     plt.cla()
                     plt.title('Environment')
-                    plt.ylim(environment.range())
-                    x, y = environment.survey()
-                    plt.plot(x, y, marker='.', color=(0.3559, 0.7196, 0.8637))
-                    plt.plot(x, prediction, marker='.', color=(.9148, .604, .0945))
+
+                    # Default graphing behaviour defined in environment.py
+                    environment.plot(plt, prediction)
 
                     plt.pause(0.00001)
