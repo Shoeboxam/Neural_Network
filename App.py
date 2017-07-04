@@ -32,7 +32,7 @@ train_params = {
     "environment": env,
 
     # Learning rate function
-    "learn_step": .0001,
+    "learn_step": .5,
     "learn": learn_fixed,
 
     # Weight decay regularization function
@@ -45,7 +45,7 @@ train_params = {
     # Percent of weights to drop each training iteration
     "dropout": 0,
 
-    "epsilon": None,           # error allowance
+    "epsilon": .04,           # error allowance
     "iteration_limit": 500000,  # limit on number of iterations to run
 
     "debug": True,

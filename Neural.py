@@ -218,29 +218,23 @@ class Neural(object):
                         print("Weights are too large: " + str(maximum))
 
             # --- Debugging and graphing ---
-            if debug:
-                predict_id = str(np.argmax(self.predict(stimulus)))
-                expect_id = str(np.argmax(expect))
-                equality = str(predict_id == expect_id)
-                print("Iteration: " + str(iteration) + ' P:O::' + predict_id + ':' + expect_id + '->' + equality)
-
             # Exit condition
             if iteration_limit is not None and iteration >= iteration_limit:
                 break
 
-            if (graph or epsilon) and iteration % 50 == 0:
+            if (graph or epsilon or debug) and iteration % 50 == 0:
                 [inputs, expectation] = map(np.array, environment.survey())
-                evaluation = self.predict(inputs.T)[0]
-                difference = np.linalg.norm(expectation.T - evaluation)
-                pts.append((iteration, difference))
+                prediction = self.predict(inputs.T).T
+                error = environment.error(expectation, prediction)
 
-                # Output state of machine
-                # print(str(self.iteration) + ': \n' + str(evaluation))
-
-                if difference < epsilon:
+                if error < epsilon:
                     converged = True
 
+                if debug:
+                    print("Error: " + str(error))
+
                 if graph:
+                    pts.append((iteration, error))
 
                     plt.subplot(1, 2, 1)
                     plt.cla()
@@ -254,6 +248,6 @@ class Neural(object):
                     plt.ylim(environment.range())
                     x, y = environment.survey()
                     plt.plot(x, y, marker='.', color=(0.3559, 0.7196, 0.8637))
-                    plt.plot(x, evaluation.T, marker='.', color=(.9148, .604, .0945))
+                    plt.plot(x, prediction, marker='.', color=(.9148, .604, .0945))
 
                     plt.pause(0.00001)

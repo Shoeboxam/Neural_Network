@@ -31,6 +31,10 @@ class Environment(object):
         # Number of output nodes
         pass
 
+    @staticmethod
+    def error(expect, predict):
+        # How to quantify error
+        pass
 
 class Logic_Gate(Environment):
 
@@ -58,6 +62,10 @@ class Logic_Gate(Environment):
     def size_output(self):
         return np.shape(self._expectation)[0]
 
+    @staticmethod
+    def error(expect, predict):
+        return np.linalg.norm(expect.T - predict)
+
 
 class Continuous(Environment):
 
@@ -84,6 +92,10 @@ class Continuous(Environment):
 
     def size_output(self):
         return 1
+
+    @staticmethod
+    def error(expect, predict):
+        return np.linalg.norm(expect.T - predict)
 
 
 class MNIST(Environment):
@@ -146,7 +158,7 @@ class MNIST(Environment):
         return [self.train_images[x], self.train_labels[x]]
 
     def survey(self):
-        x = np.random.randint(np.size(self.test_images[0]), size=20)
+        x = np.random.randint(np.size(self.test_images[0]), size=50)  # Changes error granularity
         return [self.test_images[x], self.test_labels[x]]
 
     def range(self):
@@ -157,3 +169,9 @@ class MNIST(Environment):
 
     def size_output(self):
         return np.size(self.train_labels[0])
+
+    @staticmethod
+    def error(expect, predict):
+        predict_id = np.argmax(predict, axis=1)
+        expect_id = np.argmax(expect, axis=1)
+        return 1.0 - np.mean((predict_id == expect_id).astype(float))
