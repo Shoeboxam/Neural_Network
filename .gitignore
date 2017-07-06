@@ -1,0 +1,6 @@
+/Images/
+/__pycache__/
+*.pyc
+keyfile.txt
+.idea/
+data/
