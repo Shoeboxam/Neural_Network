@@ -103,8 +103,8 @@ init_params = {
     # Basis function(s) from Function.py
     "basis": [basis_bent, basis_softmax],
 
-    # Error function from Function.py
-    "delta": delta_cross_entropy
+    # Distribution to use for weight initialization
+    "distribute": np.random.normal
     }
 
 network = Neural_Network(**init_params)
@@ -113,6 +113,9 @@ network = Neural_Network(**init_params)
 train_params = {
     # Source of stimuli
     "environment": environment,
+
+    # Error function from Function.py
+    "cost": cost_cross_entropy,
 
     # Learning rate function
     "learn_step": .5,

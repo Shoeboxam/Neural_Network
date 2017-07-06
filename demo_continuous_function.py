@@ -47,8 +47,8 @@ init_params = {
     # Basis function(s) from Function.py
     "basis": basis_bent,
 
-    # Error function from Function.py
-    "delta": delta_sum_squared
+    # Weight initialization distribution
+    "distribute": np.random.uniform
     }
 
 network = Neural_Network(**init_params)
@@ -57,6 +57,9 @@ network = Neural_Network(**init_params)
 train_params = {
     # Source of stimuli
     "environment": environment,
+
+    # Error function from Function.py
+    "cost": cost_sum_squared,
 
     # Learning rate function
     "learn_step": .0001,

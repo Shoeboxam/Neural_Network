@@ -11,21 +11,19 @@ class Neural_Network(object):
     # Basis:       logistic, rectilinear...
     # Delta:       sum squared, cross entropy error
 
-    def __init__(self, units, basis=Function.basis_bent, delta=Function.delta_sum_squared):
+    def __init__(self, units, basis=Function.basis_bent, cost=Function.cost_sum_squared, distribute=np.random.rand):
 
         # Weight and bias initialization. Initial random numbers are scaled by layer size.
         self.weights = []
         self.biases = []
         for i in range(len(units) - 1):
-            self.weights.append((np.random.rand(units[i + 1], units[i]) * 2 - 1) / np.sqrt(units[i]))
+            self.weights.append((distribute(units[i + 1], units[i]) * 2 - 1) / np.sqrt(units[i]))
             self.biases.append(np.zeros(units[i + 1]))
 
         # Basis functions
         if type(basis) is not list:
             basis = [basis] * len(units)
         self.basis = basis
-
-        self.delta = delta
 
     def predict(self, data):
         """Stimulus evaluation"""
@@ -54,7 +52,7 @@ class Neural_Network(object):
     # Debug:       make graphs and log progress to console
     # Convergence: grad, newt *not implemented
 
-    def train(self, environment,
+    def train(self, environment, cost=Function.cost_sum_squared,
               learn_step=1e-2, learn=Function.learn_fixed,
               decay_step=1e-2, decay=Function.decay_NONE,
               moment_step=1e-1, dropout=0,
@@ -160,7 +158,7 @@ class Neural_Network(object):
             dq_dq = np.eye(np.shape(self.weights[-1])[0])
 
             # Loss function derivative
-            dln_dq = self.delta(expect, propagate(stimulus, cache=True), d=1) / environment.size_input()
+            dln_dq = cost(expect, propagate(stimulus, cache=True), d=1) / environment.size_input()
 
             # Train each weight set sequentially
             for layer in reversed(range(len(self.weights))):

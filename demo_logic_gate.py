@@ -48,8 +48,8 @@ class Logic_Gate(Environment):
     def error(expect, predict):
         return np.linalg.norm(expect - predict)
 
-environment = Logic_Gate(np.array([[0], [1], [1], [0]]))
-# environment = Logic_Gate(np.array([[0], [1], [1], [0], [1], [0], [0], [0]]))
+# environment = Logic_Gate(np.array([[0], [1], [1], [0]]))
+environment = Logic_Gate(np.array([[0], [1], [1], [0], [1], [0], [0], [0]]))
 # environment = Logic_Gate(np.array([[1], [0], [0], [1], [0], [0], [1], [0]]))
 
 # Notice: The plot will only graph the first dimension of an n-dimensional input.
@@ -63,8 +63,8 @@ init_params = {
     # Basis function(s) from Function.py
     "basis": basis_bent,
 
-    # Error function from Function.py
-    "delta": delta_sum_squared
+    # Weight initialization distribution
+    "distribute": np.random.uniform
     }
 
 network = Neural_Network(**init_params)
@@ -73,6 +73,9 @@ network = Neural_Network(**init_params)
 train_params = {
     # Source of stimuli
     "environment": environment,
+
+    # Error function from Function.py
+    "cost": cost_sum_squared,
 
     # Learning rate function
     "learn_step": .005,
