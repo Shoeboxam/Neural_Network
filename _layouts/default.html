@@ -26,27 +26,113 @@
 <div class="wrapper">
   <header>
     <h1>{{ site.title | default: site.github.repository_name }}</h1>
-    <p>{{ site.description | default: site.github.project_tagline }}</p>
 
     {% if site.github.is_project_page %}
     <p class="view"><a href="{{ site.github.repository_url }}">View the Project on GitHub
       <small>{{ github_name }}</small>
     </a></p>
     {% endif %}
-
-    {% if site.github.is_user_page %}
-    <p class="view"><a href="{{ site.github.owner_url }}">View My GitHub Profile</a></p>
-    {% endif %}
+    <table>
+      <thead>
+      <tr style="height:12px">
+        <th></th>
+        <th>Description</th>
+        <th>Type</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td style="padding:2px 10px; height:21px">w</td>
+        <td style="padding:2px 10px; height:21px">weights</td>
+        <td style="padding:2px 10px; height:21px">variable</td>
+      </tr>
+      <tr>
+        <td style="padding:2px 10px; height:21px">t</td>
+        <td style="padding:2px 10px; height:21px">train iteration</td>
+        <td style="padding:2px 10px; height:21px">variable</td>
+      </tr>
+      <tr>
+        <td style="padding:2px 10px; height:21px" markdown="span">$\ell$</td>
+        <td style="padding:2px 10px; height:21px">loss</td>
+        <td style="padding:2px 10px; height:21px">function</td>
+      </tr>
+      <tr>
+        <td style="padding:2px 10px; height:21px" markdown="span">$\delta$</td>
+        <td style="padding:2px 10px; height:21px">cost</td>
+        <td style="padding:2px 10px; height:21px">function</td>
+      </tr>
+      <tr>
+        <td style="padding:2px 10px; height:21px" markdown="span">$\gamma_t$</td>
+        <td style="padding:2px 10px; height:21px">learn step size</td>
+        <td style="padding:2px 10px; height:21px">function</td>
+      </tr>
+      <tr>
+        <td style="padding:2px 10px; height:21px" markdown="span">$\eta$</td>
+        <td style="padding:2px 10px; height:21px">moment step size</td>
+        <td style="padding:2px 10px; height:21px">constant</td>
+      </tr>
+      <tr>
+        <td style="padding:2px 10px; height:21px" markdown="span">$\lambda$</td>
+        <td style="padding:2px 10px; height:21px">decay step size</td>
+        <td style="padding:2px 10px; height:21px">constant</td>
+      </tr>
+      <tr>
+        <td style="padding:2px 10px; height:21px">R</td>
+        <td style="padding:2px 10px; height:21px">decay regularizer</td>
+        <td style="padding:2px 10px; height:21px">function</td>
+      </tr>
+      <tr>
+        <td style="padding:2px 10px; height:21px">y</td>
+        <td style="padding:2px 10px; height:21px">expectation</td>
+        <td style="padding:2px 10px; height:21px">constant</td>
+      </tr>
+      <tr>
+        <td style="padding:2px 10px; height:21px" markdown="span">$\ddot{\textrm{y}}$</td>
+        <td style="padding:2px 10px; height:21px">prediction</td>
+        <td style="padding:2px 10px; height:21px">function</td>
+      </tr>
+      <tr>
+        <td style="padding:2px 10px; height:21px">s</td>
+        <td style="padding:2px 10px; height:21px">stimuli</td>
+        <td style="padding:2px 10px; height:21px">constant</td>
+      </tr>
+      <tr>
+        <td style="padding:2px 10px; height:21px">n</td>
+        <td style="padding:2px 10px; height:21px">number of stimuli</td>
+        <td style="padding:2px 10px; height:21px">constant</td>
+      </tr>
+      <tr>
+        <td style="padding:2px 10px; height:21px">N</td>
+        <td style="padding:2px 10px; height:21px">number of layers</td>
+        <td style="padding:2px 10px; height:21px">constant</td>
+      </tr>
+      <tr>
+        <td style="padding:2px 10px; height:21px" markdown="span">$\textrm{q}_i$</td>
+        <td style="padding:2px 10px; height:21px">basis</td>
+        <td style="padding:2px 10px; height:21px">function</td>
+      </tr>
+      <tr>
+        <td style="padding:2px 10px; height:21px" markdown="span">$\textrm{r}_i$</td>
+        <td style="padding:2px 10px; height:21px">reinforcement</td>
+        <td style="padding:2px 10px; height:21px">function</td>
+      </tr>
+      <tr>
+        <td style="padding:2px 10px; height:21px">i</td>
+        <td style="padding:2px 10px; height:21px">layer index</td>
+        <td style="padding:2px 10px; height:21px">constant</td>
+      </tr>
+      <tr>
+        <td style="padding:2px 10px; height:21px" markdown="span">$\tau$</td>
+        <td style="padding:2px 10px; height:21px">basis relaxation</td>
+        <td style="padding:2px 10px; height:21px">constant</td>
+      </tr>
+      </tbody>
+    </table>
   </header>
   <section>
     {{ content }}
 
   </section>
-  <footer>
-    {% if site.github.is_project_page %}
-    <p>This project is maintained by <a href="{{ site.github.owner_url }}">{{ site.github.owner_name }}</a></p>
-    {% endif %}
-  </footer>
 </div>
 <script src="{{ '/assets/js/scale.fix.js' | relative_url }}"></script>
 </body>
