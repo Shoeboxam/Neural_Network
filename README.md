@@ -8,7 +8,9 @@ https://shoeboxam.github.io/Neural_Network/
 | Neural_Network    | Custom network             |
 | Neural_Network_TF | Same network in Tensorflow |
 
+
 Within each folder, there is the following structure:
+
 |        File       |                  Purpose                  |
 |-------------------|-------------------------------------------|
 | Neural_Network.py | Core implementation                       |
