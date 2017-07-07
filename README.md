@@ -1,3 +1,11 @@
+\[ x^2 + 2\]
+$$a^2 + b^2 = c^2$$
+
+$$
+   |\psi_1\rangle = a|0\rangle + b|1\rangle
+$$
+
+
 ## Neural Network
 
 |      File      |                    Purpose                     |

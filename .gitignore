@@ -1,6 +1,3 @@
-/Images/
-/__pycache__/
-*.pyc
-keyfile.txt
-.idea/
-data/
+_site
+.sass-cache
+.jekyll-metadata
