@@ -3,12 +3,11 @@ from Neural_Network import *
 
 import itertools
 import math
-
 import numpy as np
 np.set_printoptions(suppress=True)
 
 
-class Logic_Gate(Environment):
+class Logic_Gate:
 
     def __init__(self, expectation):
         bit_length = math.log(np.shape(expectation)[0], 2)
@@ -64,7 +63,7 @@ init_params = {
     "basis": basis_bent,
 
     # Weight initialization distribution
-    "distribute": np.random.uniform
+    "distribute": dist_uniform
     }
 
 network = Neural_Network(**init_params)

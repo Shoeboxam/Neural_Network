@@ -6,7 +6,7 @@ import numpy as np
 np.set_printoptions(suppress=True)
 
 
-class Continuous(Environment):
+class Continuous:
 
     def __init__(self, funct, bounds):
         self._funct = np.vectorize(funct)
@@ -32,6 +32,12 @@ class Continuous(Environment):
     def size_output(self):
         return 1
 
+    def plot(self, plt, predict):
+        plt.ylim(self._range)
+        x, y = self.survey()
+        plt.plot(x, y, marker='.', color=(0.3559, 0.7196, 0.8637))
+        plt.plot(x, predict.T[0], marker='.', color=(.9148, .604, .0945))
+
     @staticmethod
     def error(expect, predict):
         return np.linalg.norm(expect - predict)
@@ -48,7 +54,7 @@ init_params = {
     "basis": basis_bent,
 
     # Weight initialization distribution
-    "distribute": np.random.uniform
+    "distribute": dist_uniform
     }
 
 network = Neural_Network(**init_params)

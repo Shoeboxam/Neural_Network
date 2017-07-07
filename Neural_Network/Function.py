@@ -117,6 +117,14 @@ learn_invroot = Function('learn', 'invroot',
                          [lambda t, i: 1 / np.sqrt(t)])
 
 
+# DISTRIBUTION FUNCTIONS
+dist_uniform = Function('dist', 'uniform',
+                        [lambda x, y: np.random.uniform(low=-1, high=1, size=(x, y))])
+
+dist_normal  = Function('dist', 'normal',
+                        [lambda x, y: np.random.normal(loc=0, scale=1, size=(x, y))])
+
+
 def piecewise(x, lower, upper, thresh=0):
 
     low_indices = np.where(x < thresh)

@@ -24,11 +24,8 @@ class Environment:
         pass
 
     def plot(self, plt, predict):
-        # Default method to graph a plot
-        plt.ylim(self._range)
-        x, y = self.survey()
-        plt.plot(x, y, marker='.', color=(0.3559, 0.7196, 0.8637))
-        plt.plot(x, predict.T[0], marker='.', color=(.9148, .604, .0945))
+        # Optional: How to plot predictions
+        pass
 
     @staticmethod
     def error(expect, predict):

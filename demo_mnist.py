@@ -104,7 +104,7 @@ init_params = {
     "basis": [basis_bent, basis_softmax],
 
     # Distribution to use for weight initialization
-    "distribute": np.random.normal
+    "distribute": dist_normal
     }
 
 network = Neural_Network(**init_params)
