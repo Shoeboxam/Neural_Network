@@ -1,10 +1,6 @@
-\[ x^2 + 2\]
-$$a^2 + b^2 = c^2$$
-
 $$
-   |\psi_1\rangle = a|0\rangle + b|1\rangle
+ w_{t+1} = w_t - \gamma_t \  \textrm{vec}^{-1}\Big(\frac{d\ell_n}{dw_{vec}}\Big)_t + \eta \Big(\frac{d\ell_n}{dw_{vec}}\Big)_{t-1}
 $$
-
 
 ## Neural Network
 
