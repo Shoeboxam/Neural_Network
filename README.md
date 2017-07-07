@@ -15,7 +15,7 @@ $$
 
 The cost function $\delta(y, \ddot{y})$ is the difference between the expected value and value predicted by the network. These are represented as the loss functions in Functions.py.
 
-The prediction $\ddot{y}(q_0)$ is simply the output of the final layer, q_0. Notice that the derivative is the identity matrix.
+The prediction $\ddot{y}(q_0)$ is simply the output of the final layer, $q_0$. Notice that the derivative is the identity matrix.
 
 The bracketed composition expands with respect to the number of layers in the network. For example, a network with three hidden layers would have a function composition $q_0(r_0(q_1(r_1(q_2(r_2)))))$.
 
@@ -23,7 +23,7 @@ $$
 \displaystyle  \ddot{\textrm{y}} = q_0 = \underset{i=0}{\overset{N}{\bigcirc}} (q_i \circ r_i (w_i, s_i))
 $$
 
-The regularization term $\lambda R(w_{vec})$ is a constraint that penalizes growth of weights. As the norm of the weight matrix increases, so does the error contributed by the regularization term. More on this below.
+The decay term $\lambda R(w_{vec})$ is a constraint or regularizer that penalizes growth of weights. As the norm of the weight matrix increases, so does the error contributed by the regularization term. More on this below.
 
 We now have a differentiable objective function that quantifies error. Notice the value of the objective function is dependent solely on the weight matrices and stimuli. Since the stimuli are considered constants, the weight matrices are the only variables that can be manipulated to minimize the objective function.
 
@@ -49,73 +49,35 @@ $$
 
 This is simply repeated applications of the vector chain rule.
 
+### Reinforcement and Bias
+The reinforcement function is a linear transformation with a bias constant. There are two ways to add bias units; the repository implementation and derivatives use the latter, where $b_i$ is a matrix of constants.
+
+$$r_i = w_i\begin{bmatrix}
+    s_i\\
+    1  
+\end{bmatrix}\;\;\;\;\;\;\;\;\;\;\;\; r_i = w_is_i + b_i$$
+
+The derivative for the reinforcement function with respect to the weight matrix has a special case for the input layer.
+
+$$\displaystyle\frac{dr_i}{dw_{i+1}} = s_i\;\;\;\;\;\;\;\;\;\;\;\;\displaystyle\frac{dr_N}{dw_{vec}} = s_N^\textrm{T}\otimes \textrm{I}$$
+
+The Kronecker tensor product corrects for weight matrix vectorization. The dimension of the identity matrix is the number of input nodes. Note that using the Kronecker has $\mathcal{O}(n^3)$, where an alternative gradient propagation implementation has $\mathcal{O}(n^2)$.
+
+The derivative with respect to the stimulus is useful for internal gradient propagation, and the derivative with respect to the bias is useful for updating bias constants.
+
+$$\displaystyle\frac{dr_i}{ds_{i+1}} = w_i\;\;\;\;\;\;\;\;\;\;\;\;\displaystyle\frac{dr_i}{db_i} = I$$
+
+Notice that $s_i$ and $q_{i+1}$ become interchangeable in the hidden layers, because the output of a basis function becomes the stimulus for its parent layer.
+
 ### Function Definitions
 
-Cost
-$\delta \in \Big \{$ 
-\begin{tabular}{ c }
- ($y - \ddot{y})^2$ \\
- $y$log($\ddot{y}$) + $(1-y)$log(1-$\ddot{y}$) 
-\end{tabular}\Big\} &
-$\displaystyle\frac{d\delta}{d\ddot{y}} \in \Big \{ $
-\begin{tabular}{ c }
- $-2(y - \ddot{y})^\textrm{T}$ \\
- $-(y - \ddot{y})^\textrm{T}$
-\end{tabular}
- \Big \} &
-\begin{tabular}{ c }
-sum squared error \\
-cross entropy error 
-\end{tabular} \\ \\
+Functions are defined in functions.py for each network implementation. Some popular examples are listed below.
 
-% basis
-$q_i \in \Big \{ $
-\begin{tabular}{ c c }
- $\mathcal{J}_i = $ & $\tau \textrm{log}(1 + e^{r_i/\tau})$ \\
- $\mathcal{S}_i = $ & \ $\tau (1+e^{-r_i/\tau})^{-1}$
-\end{tabular}
- $\Big \}$ & 
-$\displaystyle\frac{dq_i}{dr_i} \in \Big \{ $
-\begin{tabular}{ c c }
- $\textrm{diag(}\mathcal{S}_i)$ \\
- $\textrm{diag(}\mathcal{S}_i(1-\mathcal{S}_i))$
-\end{tabular}
- $\Big \}$ &
-\begin{tabular}{ l }
-softplus \\
-sigmoid
-\end{tabular} \\ \\
-
-% Linear multiplication
-$r_i = w_i\begin{bmatrix}
-    s_i\\
-    1  
-\end{bmatrix}$ &
-$\displaystyle\frac{dr_i}{dq_{i+1}} = \begin{bmatrix}
-    s_i\\
-    1  
-\end{bmatrix}$ &
-$ \ \displaystyle\frac{dr_N}{dw_{vec}} = \begin{bmatrix}
-    s_N\\
-    1  
-\end{bmatrix}^\textrm{T}\otimes \textrm{I}$ \\ \\
-
-% R constraints
-$R \in \Big \{ $
-\begin{tabular}{ c }
- $\|w_N\|$ \\
- \ $\|w_N\|^2$
-\end{tabular}
- $\Big \}$ &
-$\displaystyle\frac{dR}{dw} \in \Big \{ $
-\begin{tabular}{ c }
- I \\
- $2\|w_N\|$
-\end{tabular}
- $\Big \}$ &
-\begin{tabular}{ c }
- L1 lasso regularization \\
- L2 ridge regularization
-\end{tabular}
-\end{tabular}
-\end{center}
+| class |      name     |                        function                       |                    derivative                    |
+|-------|---------------|-------------------------------------------------------|--------------------------------------------------|
+| cost  | sum squared   | ($y - \ddot{y})^2$                                    | $-2(y - \ddot{y})^\textrm{T}$                    |
+| cost  | cross entropy | $y$log($\ddot{y}$) + $(1-y)$log(1-$\ddot{y}$)         | $-(y - \ddot{y})^\textrm{T}$                     |
+| basis | softplus      | $\mathcal{J}\_i =\tau \textrm{log}(1 + e^{r_i/\tau})$ | $\textrm{diag(}\mathcal{S}_i)$                   |
+| basis | logistic      | $\mathcal{S}\_i = \tau (1+e^{-r_i/\tau})^{-1}$        | $\textrm{diag(}\mathcal{S}\_i(1-\mathcal{S}_i))$ |
+| decay | L1 Lasso      | $\vert w_N\vert$                                      | $I$                                              |
+| decay | L2 Ridge      | $\vert w_N\vert^2$                                    | $2\vert w_N\vert$                                |
