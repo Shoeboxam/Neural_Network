@@ -1,6 +1,6 @@
 ## Neural Network
 
-An mathematical explanation of the network implementation is available:
+A mathematical explanation of the network implementation is available:
 https://shoeboxam.github.io/Neural_Network/
 
 |       Folder      |          Purpose           |

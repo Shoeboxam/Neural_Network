@@ -1,4 +1,9 @@
 # Learn a logic gate
+
+# Use custom implementation:
+# from Neural_Network import *
+
+# Use Tensorflow wrapper:
 from Neural_Network import *
 
 import itertools

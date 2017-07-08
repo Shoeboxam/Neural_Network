@@ -1,5 +1,9 @@
 # Learn a continuous function
 
+# Use custom implementation:
+# from Neural_Network import *
+
+# Use Tensorflow wrapper:
 from Neural_Network import *
 
 import numpy as np

@@ -79,3 +79,10 @@ learn_power   = Function('learn', 'power',
 
 learn_invroot = Function('learn', 'invroot',
                          [lambda t, i: 1 / np.sqrt(t)])
+
+
+# DISTRIBUTION FUNCTIONS
+dist_uniform = Function('dist', 'uniform',
+                        lambda shape: tf.contrib.distributions.Uniform(low=-1., high=1.).sample(shape))
+dist_normal  = Function('dist', 'uniform',
+                        lambda shape: tf.contrib.distributions.Normal(loc=0., scale=1.).sample(shape))

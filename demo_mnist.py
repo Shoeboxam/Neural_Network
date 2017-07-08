@@ -1,4 +1,8 @@
-from Neural_Network import *
+# Use custom implementation:
+# from Neural_Network import *
+
+# Use Tensorflow wrapper:
+from Neural_Network_TF import *
 
 import urllib.request
 from io import BytesIO
