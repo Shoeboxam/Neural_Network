@@ -77,6 +77,7 @@ class Neural_Network(object):
         iteration = tf.Variable(0, name='iteration', trainable=False, dtype=tf.int32)
         iteration_step_op = tf.Variable.assign_add(iteration, 1)
 
+        converged = False
         while not converged:
             if iteration == iteration_limit:
                 break
