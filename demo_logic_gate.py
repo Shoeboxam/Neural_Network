@@ -4,7 +4,7 @@
 # from Neural_Network import *
 
 # Use Tensorflow wrapper:
-from Neural_Network import *
+from Tensorflow_Wrapper import *
 
 import itertools
 import math

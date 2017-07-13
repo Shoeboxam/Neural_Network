@@ -1,5 +1,5 @@
 import numpy as np
-import tensorflow as tf
+import Tensorflow_Wrapper as tf
 
 
 class Function(object):
@@ -65,20 +65,15 @@ decay_NONE = Function('decay', 'NONE', lambda x: 0)
 
 
 # LEARNING RATE FUNCTIONS
-learn_fixed   = Function('learn', 'fixed',
-                         [lambda t, i: 1])
+learn_fixed   = Function('learn', 'fixed', lambda t, i: 1)
 
-learn_linear  = Function('learn', 'linear',
-                         [lambda t, i: 1 - t/i])
+learn_linear  = Function('learn', 'linear', lambda t, i: 1 - t/i)
 
-learn_inverse = Function('learn', 'inverse',
-                         [lambda t, i: bank / (bank + t)])
+learn_inverse = Function('learn', 'inverse', lambda t, i: bank / (bank + t))
 
-learn_power   = Function('learn', 'power',
-                         [lambda t, i: np.exp(t/i)])
+learn_power   = Function('learn', 'power', lambda t, i: np.exp(t/i))
 
-learn_invroot = Function('learn', 'invroot',
-                         [lambda t, i: 1 / np.sqrt(t)])
+learn_invroot = Function('learn', 'invroot', lambda t, i: 1 / np.sqrt(t))
 
 
 # DISTRIBUTION FUNCTIONS

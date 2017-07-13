@@ -40,6 +40,7 @@ class Neural_Network(object):
         return data
 
     # Environment: class with a 'sample stimulus' method
+    # Batch size:  number of samples per training epoch
     # Learn step:  learning parameter
     # Learn:       learning function
     # Decay step:  weight decay parameter
@@ -51,7 +52,8 @@ class Neural_Network(object):
     # Debug:       make graphs and log progress to console
     # Convergence: grad, newt *not implemented
 
-    def train(self, environment, cost=cost_sum_squared,
+    def train(self, environment, batch_size=1,
+              cost=cost_sum_squared,
               learn_step=1e-2, learn=learn_fixed,
               decay_step=1e-2, decay=decay_NONE,
               moment_step=1e-1, dropout=0,
@@ -80,7 +82,7 @@ class Neural_Network(object):
 
         # --- Define propagation within net ---
 
-        # Internal variables to reduce time complexity of training deep nets
+        # Internal variables to reduce time complexity of n layers in training deep nets
         cache_iteration = 0
         cache_weights = []
 
@@ -97,7 +99,7 @@ class Neural_Network(object):
             root = 0
 
             # Early return if weight set already computed
-            if cache is True:
+            if cache:
                 # Check for validity of cached weights
                 if iteration == cache_iteration:
 
@@ -151,13 +153,13 @@ class Neural_Network(object):
             iteration += 1
 
             # Choose a stimulus
-            [stimulus, expect] = map(np.array, environment.sample())
+            [stimulus, expect] = map(np.array, environment.sample(quantity=batch_size))
 
             # Layer derivative accumulator
             dq_dq = np.eye(np.shape(self.weights[-1])[0])
 
             # Loss function derivative
-            dln_dq = cost(expect, propagate(stimulus, cache=True), d=1) / environment.size_input()
+            dln_dq = cost(expect, propagate(stimulus, cache=True), d=1)
 
             # Train each weight set sequentially
             for layer in reversed(range(len(self.weights))):

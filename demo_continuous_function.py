@@ -1,10 +1,13 @@
 # Learn a continuous function
+from inspect import signature
 
 # Use custom implementation:
-# from Neural_Network import *
+# from Jacobian_Chain import *
 
-# Use Tensorflow wrapper:
-from Neural_Network import *
+from Gradient_Propagation import *
+
+# Use Tensorflow_Wrapper wrapper:
+# from Tensorflow_Wrapper import *
 
 import numpy as np
 np.set_printoptions(suppress=True)
@@ -13,28 +16,43 @@ np.set_printoptions(suppress=True)
 class Continuous:
 
     def __init__(self, funct, bounds):
-        self._funct = np.vectorize(funct)
+        self._size_input = len(signature(funct[0]).parameters)
+        self._size_output = len(funct)
+
+        self._funct = funct
         self._bounds = bounds
 
-        candidates = self._funct(np.linspace(*self._bounds, num=100))
-        self._range = [min(candidates), max(candidates)]
+    def sample(self, quantity=1):
+        # Generate random values for each input stimulus
+        stimulus = []
+        for idx in range(self._size_input):
+            stimulus.append(np.random.uniform(low=self._bounds[idx][0], high=self._bounds[idx][1], size=quantity))
 
-    def sample(self):
-        x = np.random.uniform(*self._bounds)
-        return [[x], [self._funct(x)]]
+        # Evaluate each function with the stimuli
+        expectation = []
+        for idx, f in enumerate(self._funct):
+            expectation.append(f(*stimulus))
 
-    def survey(self):
-        x = np.linspace(*self._bounds, num=100)
-        return [np.vstack(x), self._funct(x)]
+        return [np.array(stimulus), np.array(expectation)]
 
-    def range(self):
-        return self._range
+    def survey(self, quantity=100):
+        # Generate random values for each input stimulus
+        stimulus = []
+        for idx in range(self._size_input):
+            stimulus.append(np.linspace(start=self._bounds[idx][0], stop=self._bounds[idx][1], num=quantity))
+
+        # Evaluate each function with the stimuli
+        expectation = []
+        for idx, f in enumerate(self._funct):
+            expectation.append(f(*stimulus))
+
+        return [np.array(stimulus), np.array(expectation)]
 
     def size_input(self):
-        return 1
+        return self._size_input
 
     def size_output(self):
-        return 1
+        return self._size_output
 
     def plot(self, plt, predict):
         plt.ylim(self._range)
@@ -47,7 +65,9 @@ class Continuous:
         return np.linalg.norm(expect - predict)
 
 
-environment = Continuous(lambda v: (24 * v**4 - 2 * v**2 + v), bounds=[-1, 1])
+environment = Continuous([lambda a, b: (24 * a**4 - 2 * b**2 + a),
+                          lambda a, b: (-5 * a**3 + 2 * b**2 + b),
+                          lambda a, b: (12 * a**2 + 8 * b**3 + b)], bounds=[[-1, 1]] * 2)
 
 # ~~~ Create the network ~~~
 init_params = {
@@ -67,6 +87,7 @@ network = Neural_Network(**init_params)
 train_params = {
     # Source of stimuli
     "environment": environment,
+    "batch_size": 30,
 
     # Error function from Function.py
     "cost": cost_sum_squared,

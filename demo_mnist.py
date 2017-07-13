@@ -1,8 +1,8 @@
 # Use custom implementation:
-# from Neural_Network import *
+from Jacobian_Chain import *
 
-# Use Tensorflow wrapper:
-from Neural_Network_TF import *
+# Use Tensorflow_Wrapper wrapper:
+# from Tensorflow_Wrapper import *
 
 import urllib.request
 from io import BytesIO
@@ -76,9 +76,6 @@ class MNIST:
     def survey(self):
         x = np.random.randint(np.size(self.test_images[0]), size=50)  # Size changes error granularity
         return [self.test_images[x], self.test_labels[x]]
-
-    def range(self):
-        return [0, 1]
 
     def size_input(self):
         return np.size(self.train_images[0])
