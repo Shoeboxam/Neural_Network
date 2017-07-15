@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 from . import *
-import Tensorflow_Wrapper as tf
+import tensorflow as tf
 
 plt.style.use('fivethirtyeight')
 

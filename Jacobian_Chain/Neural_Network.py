@@ -251,3 +251,11 @@ class Neural_Network(object):
                     environment.plot(plt, prediction)
 
                     plt.pause(0.00001)
+
+
+# If the dimensionality of the input arrays is 3D, vectorize matrix multiplication
+class VecArray(np.ndarray):
+    def __matmul__(self, other):
+        if self.ndims == 3 and other.ndims == 3:
+            return np.einsum('ijn,jln->iln', self, other)
+        return super().__matmul__(self, other)

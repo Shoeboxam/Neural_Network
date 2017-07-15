@@ -1,5 +1,4 @@
-import numpy as np
-import Tensorflow_Wrapper as tf
+import tensorflow as tf
 
 
 class Function(object):
@@ -27,7 +26,7 @@ basis_identity  = Function('basis', 'identity', tf.identity)
 basis_binary    = Function('basis', 'identity', lambda x: tf.where(tf.greater(x, 0), 1, 0))
 
 basis_relu      = Function('basis', 'relu', tf.nn.relu)
-basis_exponent  = Function('basis', 'exponent', lambda x: tf.where(tf.greater(x, 0), alpha*(np.exp(x) - 1), x))
+basis_exponent  = Function('basis', 'exponent', lambda x: tf.where(tf.greater(x, 0), alpha*(tf.exp(x) - 1), x))
 
 basis_logistic  = Function('basis', 'logistic', tf.nn.sigmoid)
 basis_softplus  = Function('basis', 'softplus', tf.nn.softplus)
@@ -71,9 +70,9 @@ learn_linear  = Function('learn', 'linear', lambda t, i: 1 - t/i)
 
 learn_inverse = Function('learn', 'inverse', lambda t, i: bank / (bank + t))
 
-learn_power   = Function('learn', 'power', lambda t, i: np.exp(t/i))
+learn_power   = Function('learn', 'power', lambda t, i: tf.exp(t/i))
 
-learn_invroot = Function('learn', 'invroot', lambda t, i: 1 / np.sqrt(t))
+learn_invroot = Function('learn', 'invroot', lambda t, i: 1 / tf.sqrt(t))
 
 
 # DISTRIBUTION FUNCTIONS

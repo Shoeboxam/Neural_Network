@@ -28,43 +28,43 @@ basis_identity  = Function('basis', 'identity',
                             lambda x: np.diag(np.ones(np.shape(x)))])
 basis_binary    = Function('basis', 'binary',
                            [lambda x: piecewise(x, 0, 1),
-                            lambda x: np.diag(np.zeros(np.shape(x)))])
+                            lambda x: diag(np.zeros(np.shape(x)))])
 basis_relu      = Function('basis', 'relu',
                            [lambda x: piecewise(x, alpha * x, x),
-                            lambda x: np.diag(piecewise(x, alpha, 1))])
+                            lambda x: diag(piecewise(x, alpha, 1))])
 basis_exponent  = Function('basis', 'exponent',
                            [lambda x: piecewise(x, alpha*(np.exp(x) - 1), x),
-                            lambda x: np.diag(piecewise(x, alpha*np.exp(x), np.ones(np.shape(x))))])
+                            lambda x: diag(piecewise(x, alpha*np.exp(x), np.ones(np.shape(x))))])
 
 basis_logistic  = Function('basis', 'logistic',
                            [lambda x: tau * (1 + np.exp(-x/tau))**-1,
-                            lambda x: np.diag(np.exp(x/tau)/(np.exp(x/tau) + 1)**2)])
+                            lambda x: diag(np.exp(x/tau)/(np.exp(x/tau) + 1)**2)])
 basis_softplus  = Function('basis', 'softplus',
                            [lambda x: np.log(1 + np.exp(x)),
-                            lambda x: np.diag((1 + np.exp(-x))**-1)])
+                            lambda x: diag((1 + np.exp(-x))**-1)])
 basis_gaussian  = Function('basis', 'gaussian',
                            [lambda x: np.exp(-x**2),
-                            lambda x: np.diag(-2 * x * np.exp(-x**2))])
+                            lambda x: diag(-2 * x * np.exp(-x**2))])
 
 basis_tanh      = Function('basis', 'tanh',
                            [lambda x: np.tanh(x),
-                            lambda x: np.diag(1 - np.tanh(x)**2)])
+                            lambda x: diag(1 - np.tanh(x)**2)])
 basis_arctan    = Function('basis', 'arctan',
                            [lambda x: np.arctan(x),
-                            lambda x: np.diag(1 / (x**2 + 1))])
+                            lambda x: diag(1 / (x**2 + 1))])
 basis_sinusoid  = Function('basis', 'sinusoid',
                            [lambda x: np.sin(x),
-                            lambda x: np.diag(np.cos(x))])
+                            lambda x: diag(np.cos(x))])
 basis_sinc      = Function('basis', 'sinc',
                            [lambda x: piecewise_origin(x, np.sin(x) / x, 0),
-                            lambda x: np.diag(piecewise_origin(x, np.cos(x) / x - np.sin(x) / x**2, 0))])
+                            lambda x: diag(piecewise_origin(x, np.cos(x) / x - np.sin(x) / x**2, 0))])
 
 basis_softsign  = Function('basis', 'softsign',
                            [lambda x: x / (1 + np.abs(x)),
-                            lambda x: np.diag(1 / (1 + np.abs(x))**2)])
+                            lambda x: diag(1 / (1 + np.abs(x))**2)])
 basis_bent      = Function('basis', 'bent',
                            [lambda x: (np.sqrt(x**2 + 1) - 1) / 2 + x,
-                            lambda x: np.diag(x / (2*np.sqrt(x**2 + 1)) + 1)])
+                            lambda x: diag(x / (2*np.sqrt(x**2 + 1)) + 1)])
 
 
 # BASIS FUNCTIONS: Classification
@@ -150,3 +150,14 @@ def piecewise_origin(x, outer, inner, origin=0):
     else:
         x[out_indices] = outer[out_indices]
     return x
+
+
+# Embed n dimensional array along diagonal of n+1 dimensional array
+def diag(array):
+    if array.ndim == 1:
+        return np.diag(array)
+    else:
+        elements = []
+        for child in array:
+            elements.append(diag(child))
+        return np.vstack(elements)

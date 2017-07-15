@@ -4,9 +4,9 @@ from inspect import signature
 # Use custom implementation:
 # from Jacobian_Chain import *
 
-from Gradient_Propagation import *
+from Jacobian_Chain import *
 
-# Use Tensorflow_Wrapper wrapper:
+# Use Tensorflow wrapper:
 # from Tensorflow_Wrapper import *
 
 import numpy as np
