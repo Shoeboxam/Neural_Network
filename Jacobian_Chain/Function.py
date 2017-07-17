@@ -152,12 +152,12 @@ def piecewise_origin(x, outer, inner, origin=0):
     return x
 
 
-# Embed n dimensional array along diagonal of n+1 dimensional array
+# Diagonalize first dimension of an n-dimensional array
 def diag(array):
     if array.ndim == 1:
         return np.diag(array)
     else:
         elements = []
-        for child in array:
-            elements.append(diag(child))
-        return np.vstack(elements)
+        for idx in range(array.shape[-1]):
+            elements.append(diag(array[..., idx]))
+        return np.stack(elements, array.ndim)

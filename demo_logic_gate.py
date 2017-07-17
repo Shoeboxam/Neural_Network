@@ -1,10 +1,10 @@
 # Learn a logic gate
 
 # Use custom implementation:
-# from Neural_Network import *
+from Jacobian_Chain import *
 
 # Use Tensorflow wrapper:
-from Tensorflow_Wrapper import *
+# from Tensorflow_Wrapper import *
 
 import itertools
 import math
@@ -22,11 +22,12 @@ class Logic_Gate:
         self._expectation = expectation
         self._environment = np.array([i for i in itertools.product([0, 1], repeat=int(bit_length))])
 
-    def sample(self):
-        choice = np.random.randint(np.shape(self._environment)[0])
-        return self._environment[choice], self._expectation[choice]
+    def sample(self, quantity=1):
+        choice = np.random.randint(np.shape(self._environment)[0], size=quantity)
+        return self._environment[choice].T, self._expectation[choice].T
 
-    def survey(self):
+    def survey(self, quantity=None):
+        # Since the domain of logic gates tends to be so small, all elements are returned in the survey
         return [self._environment, self._expectation]
 
     def size_input(self):
