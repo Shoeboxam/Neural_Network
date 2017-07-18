@@ -15,18 +15,23 @@ np.set_printoptions(suppress=True)
 
 class Continuous:
 
-    def __init__(self, funct, bounds):
+    def __init__(self, funct, domain, range=(-1, 1)):
         self._size_input = len(signature(funct[0]).parameters)
         self._size_output = len(funct)
 
         self._funct = funct
-        self._bounds = bounds
+        self._domain = domain
+
+        if range is None:
+            self._range = [[-1, 1]] * len(funct)
+        else:
+            self._range = range
 
     def sample(self, quantity=1):
         # Generate random values for each input stimulus
         stimulus = []
         for idx in range(self._size_input):
-            stimulus.append(np.random.uniform(low=self._bounds[idx][0], high=self._bounds[idx][1], size=quantity))
+            stimulus.append(np.random.uniform(low=self._domain[idx][0], high=self._domain[idx][1], size=quantity))
 
         # Evaluate each function with the stimuli
         expectation = []
@@ -39,7 +44,7 @@ class Continuous:
         # Generate random values for each input stimulus
         stimulus = []
         for idx in range(self._size_input):
-            stimulus.append(np.linspace(start=self._bounds[idx][0], stop=self._bounds[idx][1], num=quantity))
+            stimulus.append(np.linspace(start=self._domain[idx][0], stop=self._domain[idx][1], num=quantity))
 
         # Evaluate each function with the stimuli
         expectation = []
@@ -57,17 +62,19 @@ class Continuous:
     def plot(self, plt, predict):
         plt.ylim(self._range)
         x, y = self.survey()
-        plt.plot(x, y, marker='.', color=(0.3559, 0.7196, 0.8637))
-        plt.plot(x, predict.T[0], marker='.', color=(.9148, .604, .0945))
+        # plt.plot(x, y, marker='.', color=(0.3559, 0.7196, 0.8637))
+        # plt.plot(x, predict.T[0], marker='.', color=(.9148, .604, .0945))
 
     @staticmethod
     def error(expect, predict):
         return np.linalg.norm(expect - predict)
 
 
-environment = Continuous([lambda a, b: (24 * a**4 - 2 * b**2 + a),
-                          lambda a, b: (-5 * a**3 + 2 * b**2 + b),
-                          lambda a, b: (12 * a**2 + 8 * b**3 + b)], bounds=[[-1, 1]] * 2)
+# environment = Continuous([lambda a, b: (24 * a**4 - 2 * b**2 + a),
+#                           lambda a, b: (-5 * a**3 + 2 * b**2 + b),
+#                           lambda a, b: (12 * a**2 + 8 * b**3 + b)], domain=[[-1, 1]] * 2, range=[[-1, 1]] * 3)
+
+environment = Continuous([lambda v: (24 * v**4 - 2 * v**2 + v)], domain=[[-1, 1]])
 
 # ~~~ Create the network ~~~
 init_params = {
@@ -87,7 +94,7 @@ network = Neural_Network(**init_params)
 train_params = {
     # Source of stimuli
     "environment": environment,
-    "batch_size": 30,
+    "batch_size": 1,
 
     # Error function from Function.py
     "cost": cost_sum_squared,
@@ -117,4 +124,4 @@ network.train(**train_params)
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()
-print(network.predict(stimuli.T))
+print(network.predict(stimuli))

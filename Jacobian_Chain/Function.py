@@ -80,7 +80,7 @@ basis_softmax   = Function('basis', 'SMax',
 # COST FUNCTIONS
 cost_sum_squared    = Function('cost', 'SSE',  # Same as RSS and SSR
                                [lambda O, P: sum((O - P)**2),
-                                lambda O, P: -2 * np.transpose(O - P)])
+                                lambda O, P: -2 * (O - P)])
 
 cost_cross_entropy  = Function('cost', 'CEE',
                                [lambda O, P: (O * np.log(P)) + (1 - O) * np.log(1 - P),

@@ -11,7 +11,6 @@ class Neural_Network(object):
     # Delta:       sum squared, cross entropy error
 
     def __init__(self, units, basis=basis_bent, distribute=dist_normal):
-        print(units)
 
         # Weight and bias initialization. Initial random numbers are scaled by layer size.
         self.weights = []
@@ -30,7 +29,6 @@ class Neural_Network(object):
 
         for idx in range(len(self.weights)):
             #  r = basis          (W                 * x    + b)
-            print(self.biases[idx].shape)
             data = self.basis[idx](self.weights[idx] @ data + self.biases[idx])
         return data
 
@@ -118,10 +116,6 @@ class Neural_Network(object):
                     # Resize remaining nodes to compensate for loss of nodes
                     data = data.astype(float) * (1.0 / (1 - dropout))
 
-                # print(layer_id)
-                # print(np.shape(self.weights[layer_id]))
-                # print(np.shape(data))
-                # print(np.shape(self.biases[layer_id]))
                 data = self.weights[layer_id] @ data + self.biases[layer_id]
                 data = self.basis[layer_id](data)
 
@@ -144,19 +138,16 @@ class Neural_Network(object):
         converged = False
         while not converged:
             iteration += 1
-            print("Iteration: " + str(iteration))
+            # print("Iteration: " + str(iteration))
 
             # Choose a stimulus
             stimulus, expect = map(Array, environment.sample(quantity=batch_size))
-            stimulus = stimulus.view(Array)
-            expect = expect.view(Array)
 
             # Layer derivative accumulator
             dq_dq = Array(np.eye(self.weights[-1].shape[0]))
 
             # Loss function derivative
-            dln_dq = np.atleast_2d(np.average(cost(expect, propagate(stimulus, cache=True), d=1), axis=0))
-            # print(np.shape(dln_dq))
+            dln_dq = cost(expect, propagate(stimulus, cache=True), d=1)[np.newaxis, ...]
 
             # Train each weight set sequentially
             for layer in reversed(range(len(self.weights))):
@@ -175,17 +166,10 @@ class Neural_Network(object):
                 for feature in s.T:
                     dr_dWvec_i.append(np.kron(np.identity(self.weights[layer].shape[0]), feature.T))
                 dr_dWvec = Array(np.dstack(dr_dWvec_i))
-                # print(np.shape(dr_dWvec))
 
                 # Chain rule for full derivative
-                dln_dq = dln_dq @ dq_dq
-                dln_dr = dln_dq @ dq_dr
-                dln_dWvec = dln_dr @ dr_dWvec
-                # print(dln_dr.shape)
-
-                print(dq_dq.shape)
-                dln_dq = dln_dq @ dq_dq
-                dln_db = dln_dq @ dq_dr  # @ dr_db (Identity matrix)
+                dln_dWvec = dln_dq @ dq_dq @ dq_dr @ dr_dWvec
+                dln_db = dln_dq @ dq_dq @ dq_dr  # @ dr_db (Identity matrix)
 
                 # Unvectorize
                 dln_dW = np.reshape(dln_dWvec.T, [*self.weights[layer].shape, batch_size])
@@ -196,32 +180,20 @@ class Neural_Network(object):
 
                 # Compute bias update
                 bias_gradient = -learn_step[layer] * dln_db
-                # print(self.biases[layer].shape)
                 bias_decay = decay_step[layer] * decay(self.biases[layer], d=1)
                 bias_momentum = moment_step[layer] * bias_update[layer]
-                # print("Grad: " + str(bias_gradient.shape))
-                # print("Decay: " + str(bias_decay))
-                # print("Sum: " + str((bias_gradient + bias_decay[np.newaxis, :]).shape))
-
-                # print("Bias Momentum: " + str(bias_momentum.shape))
 
                 bias_update[layer] = learn_rate * (bias_gradient + bias_decay[np.newaxis, :]) + bias_momentum
-
-                # print("Bias Update: " + str(bias_update[layer].shape))
 
                 # Compute weight update
                 weight_gradient = -learn_step[layer] * dln_dW
                 weight_decay = decay_step[layer] * decay(self.weights[layer], d=1)
                 weight_momentum = moment_step[layer] * weight_update[layer]
 
-                # print(np.shape(weight_gradient))
-
                 weight_update[layer] = learn_rate * (weight_gradient + weight_decay) + weight_momentum
 
                 # Apply gradient descent
-                # print(bias_update[layer].shape)
                 self.biases[layer] += np.average(bias_update[layer], axis=2).T
-                print(np.shape(self.biases[layer]))
                 self.weights[layer] += np.average(weight_update[layer], axis=2)
 
                 # ~~~~~~~ Update internal state ~~~~~~~
@@ -242,7 +214,7 @@ class Neural_Network(object):
 
             if (graph or epsilon or debug) and iteration % 50 == 0:
                 [inputs, expectation] = map(Array, environment.survey())
-                prediction = self.predict(inputs.T).T
+                prediction = self.predict(inputs)
                 error = environment.error(expectation, prediction)
 
                 if error < epsilon:
@@ -305,8 +277,6 @@ class Array(np.ndarray):
         if type(self) in self._types or type(other) in self._types:
             return self * other
 
-        # print(self.shape)
-        # print(other.shape)
         # Stimuli id represents dimension 3.
         # Matrix multiplication between 3D arrays is the matrix multiplication between respective matrix slices
         if self.ndim == 3 and other.ndim == 3:

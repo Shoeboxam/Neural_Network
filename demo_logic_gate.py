@@ -28,7 +28,7 @@ class Logic_Gate:
 
     def survey(self, quantity=None):
         # Since the domain of logic gates tends to be so small, all elements are returned in the survey
-        return [self._environment, self._expectation]
+        return [self._environment.T, self._expectation.T]
 
     def size_input(self):
         return np.shape(self._environment)[1]
@@ -38,7 +38,7 @@ class Logic_Gate:
 
     def plot(self, plt, predict):
         data = np.zeros((2**self.size_input(), 2))
-        predict = np.clip(predict.T[0], 0, 1)
+        predict = np.clip(predict[0], 0, 1)
 
         for idx, index_bits in enumerate(self._environment):
             out = 0
