@@ -78,6 +78,7 @@ network = Neural_Network(**init_params)
 train_params = {
     # Source of stimuli
     "environment": environment,
+    "batch_size": 1,
 
     # Error function from Function.py
     "cost": cost_sum_squared,

@@ -11,13 +11,14 @@ class Neural_Network(object):
     # Delta:       sum squared, cross entropy error
 
     def __init__(self, units, basis=basis_bent, distribute=dist_normal):
+        print(units)
 
         # Weight and bias initialization. Initial random numbers are scaled by layer size.
         self.weights = []
         self.biases = []
         for idx in range(len(units) - 1):
             self.weights.append(Array(distribute(units[idx + 1], units[idx]) / np.sqrt(units[idx])))
-            self.biases.append(Array(np.zeros((units[idx + 1], 1))))
+            self.biases.append(Array(np.zeros((units[idx + 1]))))
 
         # Basis functions
         if type(basis) is not list:
@@ -28,8 +29,9 @@ class Neural_Network(object):
         """Stimulus evaluation"""
 
         for idx in range(len(self.weights)):
-            #  r = basis        (W               * x    + b)
-            data = self.basis[i](self.weights[idx] @ data + self.biases[idx])
+            #  r = basis          (W                 * x    + b)
+            print(self.biases[idx].shape)
+            data = self.basis[idx](self.weights[idx] @ data + self.biases[idx])
         return data
 
     # Environment: class with a 'sample stimulus' method
@@ -116,6 +118,10 @@ class Neural_Network(object):
                     # Resize remaining nodes to compensate for loss of nodes
                     data = data.astype(float) * (1.0 / (1 - dropout))
 
+                # print(layer_id)
+                # print(np.shape(self.weights[layer_id]))
+                # print(np.shape(data))
+                # print(np.shape(self.biases[layer_id]))
                 data = self.weights[layer_id] @ data + self.biases[layer_id]
                 data = self.basis[layer_id](data)
 
@@ -132,12 +138,13 @@ class Neural_Network(object):
         weight_update = []
         bias_update = []
         for idx in range(len(self.weights)):
-            weight_update.append(np.zeros(self.weights[idx].shape))
-            bias_update.append(np.zeros(self.biases[idx].shape))
+            weight_update.append(np.zeros((*self.weights[idx].shape, batch_size)))
+            bias_update.append(np.zeros((1, *self.biases[idx].shape)))
 
         converged = False
         while not converged:
             iteration += 1
+            print("Iteration: " + str(iteration))
 
             # Choose a stimulus
             stimulus, expect = map(Array, environment.sample(quantity=batch_size))
@@ -148,7 +155,8 @@ class Neural_Network(object):
             dq_dq = Array(np.eye(self.weights[-1].shape[0]))
 
             # Loss function derivative
-            dln_dq = cost(expect, propagate(stimulus, cache=True), d=1)
+            dln_dq = np.atleast_2d(np.average(cost(expect, propagate(stimulus, cache=True), d=1), axis=0))
+            # print(np.shape(dln_dq))
 
             # Train each weight set sequentially
             for layer in reversed(range(len(self.weights))):
@@ -156,23 +164,31 @@ class Neural_Network(object):
                 # ~~~~~~~ Loss derivative phase ~~~~~~~
                 # stimulus = value of previous basis function or input stimulus
                 s = propagate(stimulus, depth=layer, cache=True)
-                # reinforcement = W      x s + b
+                # reinforcement = W     x s + b
                 r = self.weights[layer] @ s + self.biases[layer]
 
                 # Basis function derivative
                 dq_dr = Array(self.basis[layer](r, d=1))
 
                 # Reinforcement function derivative
-                dr_dWvec = Array(np.kron(np.identity(self.weights[layer].shape[0]), s.T))
+                dr_dWvec_i = []
+                for feature in s.T:
+                    dr_dWvec_i.append(np.kron(np.identity(self.weights[layer].shape[0]), feature.T))
+                dr_dWvec = Array(np.dstack(dr_dWvec_i))
+                # print(np.shape(dr_dWvec))
 
                 # Chain rule for full derivative
                 dln_dq = dln_dq @ dq_dq
                 dln_dr = dln_dq @ dq_dr
                 dln_dWvec = dln_dr @ dr_dWvec
-                dln_db = dln_dq @ dq_dq @ dq_dr  # @ dr_db (Identity matrix)
+                # print(dln_dr.shape)
+
+                print(dq_dq.shape)
+                dln_dq = dln_dq @ dq_dq
+                dln_db = dln_dq @ dq_dr  # @ dr_db (Identity matrix)
 
                 # Unvectorize
-                dln_dW = np.reshape(dln_dWvec.T, self.weights[layer].shape)
+                dln_dW = np.reshape(dln_dWvec.T, [*self.weights[layer].shape, batch_size])
 
                 # ~~~~~~~ Gradient descent phase ~~~~~~~
                 # Same for bias and weights
@@ -180,23 +196,33 @@ class Neural_Network(object):
 
                 # Compute bias update
                 bias_gradient = -learn_step[layer] * dln_db
+                # print(self.biases[layer].shape)
                 bias_decay = decay_step[layer] * decay(self.biases[layer], d=1)
                 bias_momentum = moment_step[layer] * bias_update[layer]
+                # print("Grad: " + str(bias_gradient.shape))
+                # print("Decay: " + str(bias_decay))
+                # print("Sum: " + str((bias_gradient + bias_decay[np.newaxis, :]).shape))
 
-                bias_update[layer] = learn_rate * (bias_gradient + bias_decay) + bias_momentum
+                # print("Bias Momentum: " + str(bias_momentum.shape))
+
+                bias_update[layer] = learn_rate * (bias_gradient + bias_decay[np.newaxis, :]) + bias_momentum
+
+                # print("Bias Update: " + str(bias_update[layer].shape))
 
                 # Compute weight update
                 weight_gradient = -learn_step[layer] * dln_dW
                 weight_decay = decay_step[layer] * decay(self.weights[layer], d=1)
                 weight_momentum = moment_step[layer] * weight_update[layer]
 
+                # print(np.shape(weight_gradient))
+
                 weight_update[layer] = learn_rate * (weight_gradient + weight_decay) + weight_momentum
 
                 # Apply gradient descent
-                print(np.average(bias_update[layer], axis=1))
-                print(self.biases[layer])
-                self.biases[layer] += np.average(bias_update[layer], axis=1)
-                self.weights[layer] += np.average(weight_update[layer], axis=1)
+                # print(bias_update[layer].shape)
+                self.biases[layer] += np.average(bias_update[layer], axis=2).T
+                print(np.shape(self.biases[layer]))
+                self.weights[layer] += np.average(weight_update[layer], axis=2)
 
                 # ~~~~~~~ Update internal state ~~~~~~~
                 # Store derivative accumulation for next layer
@@ -261,23 +287,32 @@ class Array(np.ndarray):
 
         # Stimuli become vectorized, but bias units remain 1D. To add wx + b, must broadcast
         if self.ndim == 2 and other.ndim == 1:
-            return np.add(self, np.tile(other[..., np.newaxis], self.shape[1]))
-        elif self.ndim == 1 and other.ndim == 2:
-            return np.add(np.tile(self[..., np.newaxis], other.shape[1]), other)
-        else:
-            return np.add(self, other)
+            return Array(np.add(self, np.tile(other[..., np.newaxis], self.shape[1])))
+        if self.ndim == 1 and other.ndim == 2:
+            return Array(np.add(np.tile(self[..., np.newaxis], other.shape[1]), other))
+
+        if self.ndim == 3 and other.ndim == 2:
+            return Array(np.add(self, np.tile(other[..., np.newaxis], self.shape[2])))
+        if self.ndim == 2 and other.ndim == 3:
+            return Array(np.add(np.tile(self[..., np.newaxis], other.shape[2]), other))
+        return np.add(self, other)
+
+    def __iadd__(self, other):
+        return self.__add__(other)
 
     def __matmul__(self, other):
         """Implicitly broadcast and vectorize matrix multiplication"""
         if type(self) in self._types or type(other) in self._types:
             return self * other
 
+        # print(self.shape)
+        # print(other.shape)
         # Stimuli id represents dimension 3.
         # Matrix multiplication between 3D arrays is the matrix multiplication between respective matrix slices
         if self.ndim == 3 and other.ndim == 3:
-            return np.einsum('ijn,jln->iln', self, other)
+            return Array(np.einsum('ijn,jln->iln', self, other))
         if self.ndim == 2 and other.ndim == 3:
-            return np.einsum('ij,jln->iln', self, other)
+            return Array(np.einsum('ij,jln->iln', self, other))
         if self.ndim == 3 and other.ndim == 2:
-            return np.einsum('ijn,jl->iln', self, other)
+            return Array(np.einsum('ijn,jl->iln', self, other))
         return super().__matmul__(other)

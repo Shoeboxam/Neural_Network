@@ -97,7 +97,7 @@ decay_L12  = Function('decay', 'L12',
                       [lambda x: decay_L1(x) + decay_L2(x), lambda x: decay_L1(x, d=1) + decay_L2(x, d=1)])
 
 decay_NONE = Function('decay', 'NONE',
-                      [lambda x: 0, lambda x: 0])
+                      [lambda x: np.zeros([x.shape[1]] * 2), lambda x: np.zeros(x.shape)])
 
 
 # LEARNING RATE FUNCTIONS
