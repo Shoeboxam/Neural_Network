@@ -15,7 +15,7 @@ np.set_printoptions(suppress=True)
 
 class Continuous:
 
-    def __init__(self, funct, domain, range=(-1, 1)):
+    def __init__(self, funct, domain, range=None):
         self._size_input = len(signature(funct[0]).parameters)
         self._size_output = len(funct)
 
@@ -24,6 +24,10 @@ class Continuous:
 
         if range is None:
             self._range = [[-1, 1]] * len(funct)
+
+            if self._size_input == 1 and self._size_output == 1:
+                candidates = self._funct[0](np.linspace(*self._domain[0], num=100))
+                self._range = [[min(candidates), max(candidates)]]
         else:
             self._range = range
 
@@ -60,10 +64,12 @@ class Continuous:
         return self._size_output
 
     def plot(self, plt, predict):
-        plt.ylim(self._range)
         x, y = self.survey()
-        # plt.plot(x, y, marker='.', color=(0.3559, 0.7196, 0.8637))
-        # plt.plot(x, predict.T[0], marker='.', color=(.9148, .604, .0945))
+
+        if x.shape[0] == 1 and y.shape[0] == 1:
+            plt.ylim(self._range[0])
+            plt.plot(x[0], y[0], marker='.', color=(0.3559, 0.7196, 0.8637))
+            plt.plot(x[0], predict[0], marker='.', color=(.9148, .604, .0945))
 
     @staticmethod
     def error(expect, predict):
@@ -85,7 +91,7 @@ init_params = {
     "basis": basis_bent,
 
     # Weight initialization distribution
-    "distribute": dist_uniform
+    "distribute": dist_normal
     }
 
 network = Neural_Network(**init_params)
