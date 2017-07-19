@@ -255,7 +255,7 @@ class Array(np.ndarray):
     def __add__(self, other):
         """Implicitly broadcast to a higher dimension"""
         if type(self) in self._types or type(other) in self._types:
-            return self * other
+            return super().__add__(other)
 
         # Stimuli become vectorized, but bias units remain 1D. To add wx + b, must broadcast
         if self.ndim == 2 and other.ndim == 1:
