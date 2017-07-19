@@ -4,10 +4,8 @@ from inspect import signature
 # Use custom implementation:
 # from Jacobian_Chain import *
 
-from Jacobian_Chain import *
-
 # Use Tensorflow wrapper:
-# from Tensorflow_Wrapper import *
+from Tensorflow_Wrapper import *
 
 import numpy as np
 np.set_printoptions(suppress=True)
@@ -16,6 +14,7 @@ np.set_printoptions(suppress=True)
 class Continuous:
 
     def __init__(self, funct, domain, range=None):
+
         self._size_input = len(signature(funct[0]).parameters)
         self._size_output = len(funct)
 
@@ -88,7 +87,7 @@ init_params = {
     "units": [environment.size_input(), 15, 10, environment.size_output()],
 
     # Basis function(s) from Function.py
-    "basis": basis_bent,
+    "basis": basis_logistic,
 
     # Weight initialization distribution
     "distribute": dist_normal

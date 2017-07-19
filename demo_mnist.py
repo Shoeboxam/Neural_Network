@@ -69,13 +69,13 @@ class MNIST:
             bool_matrix[np.arange(np.size(integer_matrix)), integer_matrix] = True
             return bool_matrix
 
-    def sample(self):
-        x = np.random.randint(np.size(self.train_images[0]))
-        return [self.train_images[x], self.train_labels[x]]
+    def sample(self, quantity=1):
+        x = np.random.randint(np.size(self.train_images[0]), size=quantity)
+        return [self.train_images[x].T, self.train_labels[x].T]
 
-    def survey(self):
-        x = np.random.randint(np.size(self.test_images[0]), size=50)  # Size changes error granularity
-        return [self.test_images[x], self.test_labels[x]]
+    def survey(self, quantity=50):
+        x = np.random.randint(np.size(self.test_images[0]), size=quantity)  # Size changes error granularity
+        return [self.test_images[x].T, self.test_labels[x].T]
 
     def size_input(self):
         return np.size(self.train_images[0])
@@ -114,6 +114,7 @@ network = Neural_Network(**init_params)
 train_params = {
     # Source of stimuli
     "environment": environment,
+    "batch_size": 2,
 
     # Error function from Function.py
     "cost": cost_cross_entropy,

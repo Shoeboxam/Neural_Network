@@ -69,12 +69,13 @@ basis_bent      = Function('basis', 'bent',
 
 # BASIS FUNCTIONS: Classification
 def softmax(x):
+    print(np.shape(x))
     temp = np.exp(x - x.max())
     return temp / np.sum(temp)
 
 basis_softmax   = Function('basis', 'SMax',
                            [softmax,
-                            lambda x: softmax(x) * (np.eye(len(x)) - softmax(x))])
+                            lambda x: softmax(x) * (np.eye(x.shape[0]) - softmax(x))])
 
 
 # COST FUNCTIONS

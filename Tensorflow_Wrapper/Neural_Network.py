@@ -1,9 +1,11 @@
 import matplotlib.pyplot as plt
+import os
 
 from . import *
 import tensorflow as tf
 
 plt.style.use('fivethirtyeight')
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
 class Neural_Network(object):
@@ -13,22 +15,31 @@ class Neural_Network(object):
 
     def __init__(self, units, basis=basis_logistic, distribute=dist_uniform):
 
+        self.units = units
+
         # Basis functions
         if type(basis) is not list:
             basis = [basis] * len(units)
 
-        # Construct the network graph, starting with the input stimulus
-        self.graph = tf.placeholder(tf.float32, [None, units[0]])
+        # Construct placeholders for the input and expected output variables
+        self.stimulus = tf.placeholder(tf.float32, [units[0], None], name='stimulus')
+        self.expected = tf.placeholder(tf.float32, [units[-1], None], name='expected')
 
-        for it in range(len(units) - 1):
-            weights = tf.Variable(distribute([units[it], units[it + 1]]))
-            bias = tf.Variable(distribute([units[it + 1]]))
-            self.graph = basis[it](self.graph @ weights + bias)
+        # Generate the graph
+        self.graph = self.stimulus
 
-    def predict(self, data):
+        self.weights = []
+        self.biases = []
+        for idx in range(len(units) - 1):
+            self.weights.append(tf.Variable(distribute([units[idx + 1], units[idx]]), name="weight_" + str(idx)))
+            self.biases.append(tf.Variable(tf.zeros((units[idx + 1])), name="bias_" + str(idx)))
+            self.graph = basis[idx](self.weights[-1] @ self.graph + self.biases[-1][..., None])
+
+        self.session = tf.InteractiveSession()
+
+    def predict(self, stimulus):
         """Stimulus evaluation"""
-
-        return data
+        return self.session.run(self.graph, feed_dict={self.stimulus: stimulus})
 
     # Environment: class with a 'sample stimulus' method
     # Learn step:  learning parameter
@@ -42,15 +53,14 @@ class Neural_Network(object):
     # Debug:       make graphs and log progress to console
     # Convergence: grad, newt *not implemented
 
-    def train(self, environment, convergence=tf.train.GradientDescentOptimizer,
+    def train(self, environment, batch_size=1,
+              convergence=tf.train.GradientDescentOptimizer,
               cost=cost_sum_squared,
               learn_step=1e-2, learn=learn_fixed,
               decay_step=1e-2, decay=decay_NONE,
               moment_step=1e-1, dropout=0,
               epsilon=1e-2, iteration_limit=None,
               debug=False, graph=False):
-
-        session = tf.InteractiveSession()
 
         # --- Setup parameters ---
 
@@ -72,17 +82,21 @@ class Neural_Network(object):
         if type(moment_step) is float or type(moment_step) is int:
             moment_step = [moment_step] * len(self.weights)
 
+        stimulus, expected = environment.sample(quantity=batch_size)
+
         iteration = tf.Variable(0, name='iteration', trainable=False, dtype=tf.int32)
         iteration_step_op = tf.Variable.assign_add(iteration, 1)
 
-        train_step = convergence(learn_step * learn(iteration)).minimize(loss)
+        tf.global_variables_initializer().run()
+        print(self.graph.shape)
+
+        train_step = convergence(learn_step).minimize(cost(self.expected, self.graph))
 
         converged = False
         while not converged:
 
             if iteration == iteration_limit:
                 break
-            session.run(iteration_step_op)
 
-            batch_x
-            session.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
+            self.session.run(iteration_step_op)
+            self.session.run(train_step, feed_dict={self.stimulus: stimulus, self.expected: expected})
