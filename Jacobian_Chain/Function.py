@@ -1,4 +1,5 @@
 import numpy as np
+from .Array import Array
 
 
 class Function(object):
@@ -69,13 +70,19 @@ basis_bent      = Function('basis', 'bent',
 
 # BASIS FUNCTIONS: Classification
 def softmax(x):
-    print(np.shape(x))
-    temp = np.exp(x - x.max())
-    return temp / np.sum(temp)
+    if x.ndim == 1:
+        temp = np.exp(x - x.max())
+        return temp / np.sum(temp)
+    else:
+        cuts = []
+        for idx in range(x.shape[-1]):
+            temp = np.exp(x[..., idx] - x[..., idx].max())
+            cuts.append(temp / np.sum(temp, axis=0))
+        return Array(np.stack(cuts, 1))
 
 basis_softmax   = Function('basis', 'SMax',
                            [softmax,
-                            lambda x: softmax(x) * (np.eye(x.shape[0]) - softmax(x))])
+                            lambda x: diag(softmax(x)) - softmax(x) @ softmax(x).T])
 
 
 # COST FUNCTIONS
@@ -86,6 +93,10 @@ cost_sum_squared    = Function('cost', 'SSE',  # Same as RSS and SSR
 cost_cross_entropy  = Function('cost', 'CEE',
                                [lambda O, P: (O * np.log(P)) + (1 - O) * np.log(1 - P),
                                 lambda O, P: (P - O)])
+
+cost_softmax_CEE    = Function('cost', 'SMCEE',
+                               [lambda O, P: (O * np.log(softmax(P))) + (1 - O) * np.log(1 - softmax(P)),
+                                lambda O, P: softmax(P) - O])
 
 # REGULARIZATION DECAY FUNCTIONS
 decay_L1   = Function('decay', 'L1',
@@ -156,9 +167,9 @@ def piecewise_origin(x, outer, inner, origin=0):
 # Diagonalize first dimension of an n-dimensional array
 def diag(array):
     if array.ndim == 1:
-        return np.diag(array)
+        return Array(np.diag(array))
     else:
         elements = []
         for idx in range(array.shape[-1]):
             elements.append(diag(array[..., idx]))
-        return np.stack(elements, array.ndim)
+        return Array(np.stack(elements, array.ndim))

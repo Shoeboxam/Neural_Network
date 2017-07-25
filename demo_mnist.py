@@ -99,10 +99,10 @@ environment = MNIST()
 # ~~~ Create the network ~~~
 init_params = {
     # Shape of network
-    "units": [environment.size_input(), 20, environment.size_output()],
+    "units": [environment.size_input(), 100, 100, environment.size_output()],
 
     # Basis function(s) from Function.py
-    "basis": [basis_bent, basis_softmax],
+    "basis": [basis_bent, basis_bent, basis_softmax],
 
     # Distribution to use for weight initialization
     "distribute": dist_normal
@@ -114,7 +114,7 @@ network = Neural_Network(**init_params)
 train_params = {
     # Source of stimuli
     "environment": environment,
-    "batch_size": 2,
+    "batch_size": 1,
 
     # Error function from Function.py
     "cost": cost_cross_entropy,
