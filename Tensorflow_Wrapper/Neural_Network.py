@@ -41,8 +41,6 @@ class Neural_Network(object):
             self.session = tf.Session(graph=self.graph)
             self.session.as_default()
 
-        print(self.graph)
-
     def predict(self, stimulus):
         """Stimulus evaluation"""
         return self.session.run(self.hierarchy, feed_dict={self.stimulus: stimulus})
@@ -91,8 +89,6 @@ class Neural_Network(object):
         # Add operations to class graph
         with self.graph.as_default():
 
-            stimulus, expected = environment.survey(quantity=50)
-
             iteration = tf.Variable(0, name='iteration', trainable=False, dtype=tf.int32)
             iteration_step_op = tf.Variable.assign_add(iteration, 1)
 
@@ -100,11 +96,47 @@ class Neural_Network(object):
 
             tf.global_variables_initializer().run(session=self.session)
 
+        # Actual training
+        pts = []
         converged = False
         while not converged:
+            stimulus, expected = environment.sample(quantity=batch_size)
 
-            if self.session.run(iteration) == iteration_limit:
+            self.session.run(train_step, feed_dict={self.stimulus: stimulus, self.expected: expected})
+
+            iteration_int = self.session.run(iteration_step_op)
+            if iteration_limit is not None and iteration_int >= iteration_limit:
                 break
 
-            self.session.run(iteration_step_op)
-            self.session.run(train_step, feed_dict={self.stimulus: stimulus, self.expected: expected})
+            # Stopping conditions, graphs and pretty outputs
+            if (graph or epsilon or debug) and iteration_int % 50 == 0:
+                [inputs, expectation] = environment.survey()
+                prediction = self.predict(inputs)
+                error = environment.error(expectation, prediction)
+
+                if error < epsilon:
+                    converged = True
+
+                if debug:
+                    print("Error: " + str(error))
+                    # print(expectation)
+                    # print(prediction)
+
+                if graph:
+                    pts.append((iteration_int, error))
+
+                    plt.subplot(1, 2, 1)
+                    plt.cla()
+                    plt.title('Error')
+                    plt.plot(*zip(*pts), marker='.', color=(.9148, .604, .0945))
+                    plt.pause(0.00001)
+
+                    plt.subplot(1, 2, 2)
+                    plt.cla()
+                    plt.title('Environment')
+
+                    # Default graphing behaviour defined in environment.py
+                    environment.plot(plt, prediction)
+
+                    plt.pause(0.00001)
+

@@ -78,7 +78,7 @@ network = Neural_Network(**init_params)
 train_params = {
     # Source of stimuli
     "environment": environment,
-    "batch_size": 1,
+    "batch_size": 8,
 
     # Error function from Function.py
     "cost": cost_sum_squared,
@@ -108,4 +108,4 @@ network.train(**train_params)
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()
-print(network.predict(stimuli.T))
+print(network.predict(stimuli).T)

@@ -2,10 +2,10 @@
 from inspect import signature
 
 # Use custom implementation:
-from Jacobian_Chain import *
+# from Jacobian_Chain import *
 
 # Use Tensorflow wrapper:
-# from Tensorflow_Wrapper import *
+from Tensorflow_Wrapper import *
 
 import numpy as np
 np.set_printoptions(suppress=True)
@@ -79,10 +79,10 @@ class Continuous:
 #                           lambda a, b: (-5 * a**3 + 2 * b**2 + b),
 #                           lambda a, b: (12 * a**2 + 8 * b**3 + b)], domain=[[-1, 1]] * 2)
 
-environment = Continuous([lambda a, b: (24 * a**4 - 2 * b**2 + a),
-                          lambda a, b: (-5 * a**3 + 2 * b**2 + b)], domain=[[-1, 1]] * 2, range=[[-1, 1]] * 2)
+# environment = Continuous([lambda a, b: (24 * a**4 - 2 * b**2 + a),
+#                           lambda a, b: (-5 * a**3 + 2 * b**2 + b)], domain=[[-1, 1]] * 2, range=[[-1, 1]] * 2)
 
-# environment = Continuous([lambda v: (24 * v**4 - 2 * v**2 + v)], domain=[[-1, 1]])
+environment = Continuous([lambda v: (24 * v**4 - 2 * v**2 + v)], domain=[[-1, 1]])
 
 # ~~~ Create the network ~~~
 init_params = {
@@ -90,7 +90,7 @@ init_params = {
     "units": [environment.size_input(), 15, 10, environment.size_output()],
 
     # Basis function(s) from Function.py
-    "basis": basis_bent,
+    "basis": basis_softplus,
 
     # Weight initialization distribution
     "distribute": dist_normal
@@ -102,7 +102,7 @@ network = Neural_Network(**init_params)
 train_params = {
     # Source of stimuli
     "environment": environment,
-    "batch_size": 30,
+    "batch_size": 1,
 
     # Error function from Function.py
     "cost": cost_sum_squared,

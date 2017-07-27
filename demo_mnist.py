@@ -137,7 +137,7 @@ train_params = {
     "dropout": 0,
 
     "epsilon": .04,           # error allowance
-    "iteration_limit": 100,  # limit on number of iterations to run
+    "iteration_limit": 10000,  # limit on number of iterations to run
 
     "debug": True,
 
