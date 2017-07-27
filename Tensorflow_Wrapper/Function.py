@@ -49,7 +49,7 @@ basis_softmax   = Function('basis', 'SMax', tf.nn.softmax)
 cost_sum_squared    = Function('cost', 'SSE', tf.squared_difference)
 
 cost_cross_entropy  = Function('cost', 'CEE',
-                               lambda O, P: tf.reduce_mean(-tf.reduce_sum(O * tf.log(P), reduction_indices=[1])))
+                               lambda O, P: tf.reduce_mean(-tf.reduce_sum(O * tf.log(P + .01), reduction_indices=[1])))
 # TODO: Catch and correct the final basis layer to identity when training a classifier, change CEE to softmax CEE
 cost_softmax_CE     = Function('cost', 'SMCEE',
                                lambda O, P: tf.nn.softmax_cross_entropy_with_logits(labels=O, logits=P))

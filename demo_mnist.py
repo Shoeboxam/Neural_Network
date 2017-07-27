@@ -123,7 +123,7 @@ train_params = {
     "cost": cost_cross_entropy,
 
     # Learning rate function
-    "learn_step": .5,
+    "learn_step": .001,
     "learn": learn_fixed,
 
     # Weight decay regularization function
@@ -137,7 +137,7 @@ train_params = {
     "dropout": 0,
 
     "epsilon": .04,           # error allowance
-    "iteration_limit": 500000,  # limit on number of iterations to run
+    "iteration_limit": 50,  # limit on number of iterations to run
 
     "debug": True,
 
@@ -149,4 +149,4 @@ network.train(**train_params)
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()
-print(network.predict(stimuli))
+# print(network.predict(stimuli))

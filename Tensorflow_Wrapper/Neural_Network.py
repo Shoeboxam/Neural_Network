@@ -13,7 +13,7 @@ class Neural_Network(object):
     # Basis:       logistic, rectilinear...
     # Delta:       sum squared, cross entropy error
 
-    def __init__(self, units, basis=basis_logistic, distribute=dist_uniform):
+    def __init__(self, units, basis=basis_logistic, distribute=dist_normal):
 
         self.units = units
 
@@ -64,39 +64,39 @@ class Neural_Network(object):
 
         # --- Setup parameters ---
 
-        # Learning parameters
+        # # Learning parameters
         # if type(learn_step) is float or type(learn_step) is int:
         #     learn_step = [learn_step] * len(self.weights)
+        #
+        # # Decay parameters
+        # if decay_step is None:
+        #     decay_step = learn_step
+        #
+        # if type(decay_step) is float or type(decay_step) is int:
+        #     decay_step = [decay_step] * len(self.weights)
+        #
+        # # Moment parameters
+        # if moment_step is None:
+        #     moment_step = learn_step
+        #
+        # if type(moment_step) is float or type(moment_step) is int:
+        #     moment_step = [moment_step] * len(self.weights)
 
-        # Decay parameters
-        if decay_step is None:
-            decay_step = learn_step
-
-        if type(decay_step) is float or type(decay_step) is int:
-            decay_step = [decay_step] * len(self.weights)
-
-        # Moment parameters
-        if moment_step is None:
-            moment_step = learn_step
-
-        if type(moment_step) is float or type(moment_step) is int:
-            moment_step = [moment_step] * len(self.weights)
-
-        stimulus, expected = environment.survey(quantity=None)
+        stimulus, expected = environment.survey(quantity=50)
 
         iteration = tf.Variable(0, name='iteration', trainable=False, dtype=tf.int32)
         iteration_step_op = tf.Variable.assign_add(iteration, 1)
 
-        tf.global_variables_initializer().run()
-
         train_step = convergence(learn_step).minimize(cost(self.expected, self.graph))
 
-        converged = False
-        for i in range(10):
+        tf.global_variables_initializer().run()
 
-            if iteration == iteration_limit:
+        converged = False
+        while not converged:
+
+            if self.session.run(iteration) == iteration_limit:
                 break
 
             self.session.run(iteration_step_op)
-            print(tf.shape(stimulus))
             self.session.run(train_step, feed_dict={self.stimulus: stimulus, self.expected: expected})
+            print(self.session.run(self.weights[0]))
