@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 
-from . import *
+from .Function import *
+from .Array import Array
 
 plt.style.use('fivethirtyeight')
 
@@ -215,8 +216,6 @@ class Neural_Network(object):
             if (graph or epsilon or debug) and iteration % 50 == 0:
                 [inputs, expectation] = map(Array, environment.survey())
                 prediction = self.predict(inputs)
-                print(expectation.size)
-                print(prediction.size)
                 error = environment.error(expectation, prediction)
 
                 if error < epsilon:

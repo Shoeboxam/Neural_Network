@@ -75,9 +75,9 @@ class Continuous:
         return np.linalg.norm(expect - predict)
 
 
-environment = Continuous([lambda a, b: (24 * a**4 - 2 * b**2 + a),
-                          lambda a, b: (-5 * a**3 + 2 * b**2 + b),
-                          lambda a, b: (12 * a**2 + 8 * b**3 + b)], domain=[[-1, 1]] * 2)
+# environment = Continuous([lambda a, b: (24 * a**4 - 2 * b**2 + a),
+#                           lambda a, b: (-5 * a**3 + 2 * b**2 + b),
+#                           lambda a, b: (12 * a**2 + 8 * b**3 + b)], domain=[[-1, 1]] * 2)
 
 environment = Continuous([lambda a, b: (24 * a**4 - 2 * b**2 + a),
                           lambda a, b: (-5 * a**3 + 2 * b**2 + b)], domain=[[-1, 1]] * 2, range=[[-1, 1]] * 2)

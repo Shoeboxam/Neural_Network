@@ -1,8 +1,8 @@
 # Use custom implementation:
-from Jacobian_Chain import *
+# from Jacobian_Chain import *
 
 # Use Tensorflow_Wrapper wrapper:
-# from Tensorflow_Wrapper import *
+from Tensorflow_Wrapper import *
 
 import urllib.request
 from io import BytesIO
@@ -74,8 +74,11 @@ class MNIST:
         return [self.train_images[x].T, self.train_labels[x].T]
 
     def survey(self, quantity=50):
-        x = np.random.randint(np.size(self.test_images[0]), size=quantity)  # Size changes error granularity
-        return [self.test_images[x].T, self.test_labels[x].T]
+        if quantity is None:
+            return self.test_images.T, self.test_labels.T
+        else:
+            x = np.linspace(0, np.size(self.test_images[0]), quantity).astype(int)  # Size changes error granularity
+            return [self.test_images[x].T, self.test_labels[x].T]
 
     def size_input(self):
         return np.size(self.train_images[0])
@@ -146,4 +149,4 @@ network.train(**train_params)
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()
-print(network.predict(stimuli.T))
+print(network.predict(stimuli))

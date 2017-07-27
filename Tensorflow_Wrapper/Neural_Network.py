@@ -65,8 +65,8 @@ class Neural_Network(object):
         # --- Setup parameters ---
 
         # Learning parameters
-        if type(learn_step) is float or type(learn_step) is int:
-            learn_step = [learn_step] * len(self.weights)
+        # if type(learn_step) is float or type(learn_step) is int:
+        #     learn_step = [learn_step] * len(self.weights)
 
         # Decay parameters
         if decay_step is None:
@@ -82,21 +82,21 @@ class Neural_Network(object):
         if type(moment_step) is float or type(moment_step) is int:
             moment_step = [moment_step] * len(self.weights)
 
-        stimulus, expected = environment.sample(quantity=batch_size)
+        stimulus, expected = environment.survey(quantity=None)
 
         iteration = tf.Variable(0, name='iteration', trainable=False, dtype=tf.int32)
         iteration_step_op = tf.Variable.assign_add(iteration, 1)
 
         tf.global_variables_initializer().run()
-        print(self.graph.shape)
 
         train_step = convergence(learn_step).minimize(cost(self.expected, self.graph))
 
         converged = False
-        while not converged:
+        for i in range(10):
 
             if iteration == iteration_limit:
                 break
 
             self.session.run(iteration_step_op)
+            print(tf.shape(stimulus))
             self.session.run(train_step, feed_dict={self.stimulus: stimulus, self.expected: expected})
