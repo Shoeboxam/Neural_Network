@@ -123,7 +123,7 @@ train_params = {
     "cost": cost_cross_entropy,
 
     # Learning rate function
-    "learn_step": .001,
+    "learn_step": .5,
     "learn": learn_fixed,
 
     # Weight decay regularization function

@@ -84,8 +84,8 @@ train_params = {
     "cost": cost_sum_squared,
 
     # Learning rate function
-    "learn_step": .005,
-    "learn": learn_fixed,
+    "learn_step": .002,
+    "learn": learn_linear,
 
     # Weight decay regularization function
     "decay_step": 0.0001,
@@ -98,7 +98,7 @@ train_params = {
     "dropout": 0,
 
     "epsilon": .04,           # error allowance
-    "iteration_limit": 500000,  # limit on number of iterations to run
+    "iteration_limit": 5000,  # limit on number of iterations to run
 
     "debug": True,
     "graph": True

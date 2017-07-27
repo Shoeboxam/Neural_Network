@@ -109,7 +109,7 @@ train_params = {
 
     # Learning rate function
     "learn_step": .001,
-    "learn": learn_power,
+    "learn": learn_fixed,
 
     # Weight decay regularization function
     "decay_step": 0.0001,

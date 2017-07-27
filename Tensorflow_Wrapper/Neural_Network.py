@@ -92,7 +92,10 @@ class Neural_Network(object):
             iteration = tf.Variable(0, name='iteration', trainable=False, dtype=tf.int32)
             iteration_step_op = tf.Variable.assign_add(iteration, 1)
 
-            train_step = convergence(learn_step).minimize(cost(self.expected, self.hierarchy))
+            learn_rate = tf.Variable(1., name='learn_rate', trainable=False, dtype=tf.float64)
+            learn_rate_step_op = tf.Variable.assign(learn_rate, learn(iteration, iteration_limit))
+
+            train_step = convergence(learning_rate=learn_rate * learn_step).minimize(cost(self.expected, self.hierarchy))
 
             tf.global_variables_initializer().run(session=self.session)
 
@@ -101,9 +104,9 @@ class Neural_Network(object):
         converged = False
         while not converged:
             stimulus, expected = environment.sample(quantity=batch_size)
-
             self.session.run(train_step, feed_dict={self.stimulus: stimulus, self.expected: expected})
 
+            self.session.run(learn_rate_step_op)
             iteration_int = self.session.run(iteration_step_op)
             if iteration_limit is not None and iteration_int >= iteration_limit:
                 break
