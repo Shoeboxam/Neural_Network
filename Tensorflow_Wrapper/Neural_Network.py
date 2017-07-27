@@ -21,25 +21,31 @@ class Neural_Network(object):
         if type(basis) is not list:
             basis = [basis] * len(units)
 
-        # Construct placeholders for the input and expected output variables
-        self.stimulus = tf.placeholder(tf.float32, [units[0], None], name='stimulus')
-        self.expected = tf.placeholder(tf.float32, [units[-1], None], name='expected')
+        self.graph = tf.Graph()
+        with self.graph.as_default():
 
-        # Generate the graph
-        self.graph = self.stimulus
+            # Construct placeholders for the input and expected output variables
+            self.stimulus = tf.placeholder(tf.float32, [units[0], None], name='stimulus')
+            self.expected = tf.placeholder(tf.float32, [units[-1], None], name='expected')
 
-        self.weights = []
-        self.biases = []
-        for idx in range(len(units) - 1):
-            self.weights.append(tf.Variable(distribute([units[idx + 1], units[idx]]), name="weight_" + str(idx)))
-            self.biases.append(tf.Variable(tf.zeros((units[idx + 1])), name="bias_" + str(idx)))
-            self.graph = basis[idx](self.weights[-1] @ self.graph + self.biases[-1][..., None])
+            # Generate the hierarchy
+            self.hierarchy = self.stimulus
 
-        self.session = tf.InteractiveSession()
+            self.weights = []
+            self.biases = []
+            for idx in range(len(units) - 1):
+                self.weights.append(tf.Variable(distribute([units[idx + 1], units[idx]]), name="weight_" + str(idx)))
+                self.biases.append(tf.Variable(tf.zeros((units[idx + 1])), name="bias_" + str(idx)))
+                self.hierarchy = basis[idx](self.weights[-1] @ self.hierarchy + self.biases[-1][..., None])
+
+            self.session = tf.Session(graph=self.graph)
+            self.session.as_default()
+
+        print(self.graph)
 
     def predict(self, stimulus):
         """Stimulus evaluation"""
-        return self.session.run(self.graph, feed_dict={self.stimulus: stimulus})
+        return self.session.run(self.hierarchy, feed_dict={self.stimulus: stimulus})
 
     # Environment: class with a 'sample stimulus' method
     # Learn step:  learning parameter
@@ -82,14 +88,17 @@ class Neural_Network(object):
         # if type(moment_step) is float or type(moment_step) is int:
         #     moment_step = [moment_step] * len(self.weights)
 
-        stimulus, expected = environment.survey(quantity=50)
+        # Add operations to class graph
+        with self.graph.as_default():
 
-        iteration = tf.Variable(0, name='iteration', trainable=False, dtype=tf.int32)
-        iteration_step_op = tf.Variable.assign_add(iteration, 1)
+            stimulus, expected = environment.survey(quantity=50)
 
-        train_step = convergence(learn_step).minimize(cost(self.expected, self.graph))
+            iteration = tf.Variable(0, name='iteration', trainable=False, dtype=tf.int32)
+            iteration_step_op = tf.Variable.assign_add(iteration, 1)
 
-        tf.global_variables_initializer().run()
+            train_step = convergence(learn_step).minimize(cost(self.expected, self.hierarchy))
+
+            tf.global_variables_initializer().run(session=self.session)
 
         converged = False
         while not converged:
@@ -99,4 +108,3 @@ class Neural_Network(object):
 
             self.session.run(iteration_step_op)
             self.session.run(train_step, feed_dict={self.stimulus: stimulus, self.expected: expected})
-            print(self.session.run(self.weights[0]))
