@@ -21,6 +21,18 @@ tau   = 1            # Sigmoid threshold unit
 alpha = 0.5          # Parametrized rectified linear unit
 bank = 50            # Inverse learning function steepness
 
+
+# OPTIMIZATION FUNCTIONS
+opt_grad_descent = Function('conv', 'grad_descent',
+                            lambda r, args: tf.train.GradientDescentOptimizer(r, **args))
+
+opt_momentum     = Function('conv', 'momentum',
+                            lambda r, args: tf.train.MomentumOptimizer(r, **args))
+
+opt_adagrad      = Function('conv', 'adagrad',
+                            lambda r, args: tf.train.AdagradOptimizer(r, **args))
+
+
 # BASIS FUNCTIONS: Regression
 basis_identity  = Function('basis', 'identity', tf.identity)
 basis_binary    = Function('basis', 'identity', lambda x: tf.where(tf.greater(x, 0), 1, 0))

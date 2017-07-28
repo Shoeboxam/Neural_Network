@@ -1,10 +1,10 @@
 # Learn a logic gate
 
 # Use custom implementation:
-# from Jacobian_Chain import *
+from Jacobian_Chain import *
 
 # Use Tensorflow wrapper:
-from Tensorflow_Wrapper import *
+# from Tensorflow_Wrapper import *
 
 import itertools
 import math
@@ -76,9 +76,12 @@ network = Neural_Network(**init_params)
 
 # ~~~ Train the network ~~~
 train_params = {
+    "optimizer": opt_momentum,
+    "optimizer_args": {'momentum': 0.2},
+
     # Source of stimuli
     "environment": environment,
-    "batch_size": 8,
+    "batch_size": 1,
 
     # Error function from Function.py
     "cost": cost_sum_squared,
@@ -90,9 +93,6 @@ train_params = {
     # Weight decay regularization function
     "decay_step": 0.00001,
     "decay": decay_NONE,
-
-    # Momentum preservation
-    "moment_step": 0,
 
     # Percent of weights to drop each training iteration
     "dropout": 0.,

@@ -1,16 +1,16 @@
 import numpy as np
 
 
-# Define custom operations for adding and multiplying 3D and mismatched arrays
 class Array(np.ndarray):
-    _types = [str, int]
+    """Custom operations for 3D and certain non-conformable arrays"""
+    _types = [str, int, float]
 
     def __new__(cls, a):
         obj = np.array(a).view(cls)
         return obj
 
     def __add__(self, other):
-        """Implicitly broadcast to a higher dimension"""
+        """Implicitly broadcast lesser operand to a higher conformable dimension"""
         if type(self) in self._types or type(other) in self._types:
             return super().__add__(other)
 
@@ -35,8 +35,24 @@ class Array(np.ndarray):
     def __isub__(self, other):
         return self.__add__(-other)
 
+    def __truediv__(self, other):
+        if type(self) in self._types or type(other) in self._types:
+            return super().__truediv__(other)
+
+        # Adagrad has a 3D elementwise division
+        if self.ndim == 2 and other.ndim == 1:
+            return Array(np.divide(self, np.tile(other[..., np.newaxis], self.shape[1])))
+        if self.ndim == 1 and other.ndim == 2:
+            return Array(np.divide(np.tile(self[..., np.newaxis], other.shape[1]), other))
+
+        if self.ndim == 3 and other.ndim == 2:
+            return Array(np.divide(self, np.tile(other[..., np.newaxis], self.shape[2])))
+        if self.ndim == 2 and other.ndim == 3:
+            return Array(np.divide(np.tile(self[..., np.newaxis], other.shape[2]), other))
+        return np.divide(self, other)
+
     def __matmul__(self, other):
-        """Implicitly broadcast and vectorize matrix multiplication"""
+        """Implicitly broadcast and vectorize matrix multiplication along axis 3"""
         if type(self) in self._types or type(other) in self._types:
             return self * other
 

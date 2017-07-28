@@ -30,10 +30,11 @@ class Neural_Network(object):
             self.expected = tf.placeholder(tf.float32, [units[-1], None], name='expected')
             self.dropout = tf.placeholder(tf.float32, name='dropout')
 
-            # Generate the hierarchy
+            # Start the hierarchy
             self.hierarchy = self.stimulus
             self.hierarchy_train = self.stimulus
 
+            # Construct and allocate variables that define the network
             for idx in range(len(units) - 1):
                 weight = tf.Variable(distribute([units[idx + 1], units[idx]]), name="weight_" + str(idx))
                 self.graph.add_to_collection('weights', weight)
@@ -65,15 +66,18 @@ class Neural_Network(object):
     # Convergence: grad, newt *not implemented
 
     def train(self, environment, batch_size=1,
-              convergence=tf.train.GradientDescentOptimizer,
+              optimizer=opt_grad_descent,
+              optimizer_args=None,
               cost=cost_sum_squared,
               learn_step=1e-2, learn=learn_fixed,
-              decay_step=1e-2, decay=decay_NONE,
-              moment_step=1e-1, dropout=0,
+              decay_step=None, decay=decay_NONE, dropout=0,
               epsilon=1e-2, iteration_limit=None,
               debug=False, graph=False):
 
-        # --- Setup parameters ---
+        # --- Setup training parameters ---
+
+        if optimizer_args is None:
+            optimizer_args = {}
 
         # Learning parameters - Convergence methods can be tweaked for multi-layer step sizes, but seemingly not cost
         if type(learn_step) is list:
@@ -110,9 +114,11 @@ class Neural_Network(object):
             for idx, layer in enumerate(tf.get_collection('weights')):
                 tf.add_to_collection('losses', decay_step[idx] * tf.tile(decay(layer)[..., None, None], [1, batch_size]))
 
-            # Minimize all losses each step
+            # Combine weight decay and gradient losses
             loss = tf.add_n(tf.get_collection('losses'), name='loss')
-            train_step = convergence(learning_rate=learn_rate).minimize(loss)
+
+            # Use optimization method with given settings to minimize loss
+            train_step = optimizer(learn_rate, optimizer_args).minimize(loss)
 
             tf.global_variables_initializer().run(session=self.session)
 

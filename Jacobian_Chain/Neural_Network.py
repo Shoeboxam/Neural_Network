@@ -47,14 +47,26 @@ class Neural_Network(object):
     # Convergence: grad, newt *not implemented
 
     def train(self, environment, batch_size=1,
+              optimizer=opt_grad_descent,
+              optimizer_args=None,
               cost=cost_sum_squared,
               learn_step=1e-2, learn=learn_fixed,
-              decay_step=1e-2, decay=decay_NONE,
-              moment_step=1e-1, dropout=0,
+              decay_step=None, decay=decay_NONE, dropout=0,
               epsilon=1e-2, iteration_limit=None,
               debug=False, graph=False):
 
+        # Memory of previous gradient
+        weight_update = []
+        bias_update = []
+        for idx in range(len(self.weights)):
+            weight_update.append(Array(np.zeros((*self.weights[idx].shape, batch_size))))
+            bias_update.append(Array(np.zeros((1, *self.biases[idx].shape))))
+
         # --- Setup parameters ---
+
+        # Initialize optimization arguments
+        if optimizer_args is None:
+            optimizer_args = {}
 
         # Learning parameters
         if type(learn_step) is float or type(learn_step) is int:
@@ -66,13 +78,6 @@ class Neural_Network(object):
 
         if type(decay_step) is float or type(decay_step) is int:
             decay_step = [decay_step] * len(self.weights)
-
-        # Moment parameters
-        if moment_step is None:
-            moment_step = learn_step
-
-        if type(moment_step) is float or type(moment_step) is int:
-            moment_step = [moment_step] * len(self.weights)
 
         # --- Define propagation within net ---
 
@@ -129,13 +134,6 @@ class Neural_Network(object):
         iteration = 0
         pts = []
 
-        # Momentum memory
-        weight_update = []
-        bias_update = []
-        for idx in range(len(self.weights)):
-            weight_update.append(np.zeros((*self.weights[idx].shape, batch_size)))
-            bias_update.append(np.zeros((1, *self.biases[idx].shape)))
-
         converged = False
         while not converged:
             iteration += 1
@@ -180,17 +178,17 @@ class Neural_Network(object):
                 learn_rate = learn(iteration, iteration_limit)
 
                 # Compute bias update; no decay necessary
-                bias_gradient = -learn_step[layer] * dln_db
-                bias_momentum = moment_step[layer] * bias_update[layer]
+                bias_gradient = learn_step[layer] * dln_db
 
-                bias_update[layer] = learn_rate * bias_gradient + bias_momentum
+                optimizer_args['grad_past'] = bias_update[layer]
+                bias_update[layer] = learn_rate * optimizer(bias_gradient, optimizer_args)
 
                 # Compute weight update
-                weight_gradient = -learn_step[layer] * dln_dW
+                weight_gradient = learn_step[layer] * dln_dW
                 weight_decay = decay_step[layer] * decay(self.weights[layer], d=1)
-                weight_momentum = moment_step[layer] * weight_update[layer]
 
-                weight_update[layer] = learn_rate * (weight_gradient + weight_decay) + weight_momentum
+                optimizer_args['grad_past'] = weight_update[layer]
+                weight_update[layer] = learn_rate * (optimizer(weight_gradient, optimizer_args) + weight_decay)
 
                 # Apply gradient descent
                 self.biases[layer] += np.average(bias_update[layer], axis=2).T
@@ -205,7 +203,7 @@ class Neural_Network(object):
                 if debug:
                     maximum = max(self.weights[layer].min(), self.weights[layer].max(), key=abs)
                     if maximum > 1000:
-                        print("Weights are too large: " + str(maximum))
+                        print("Layer " + str(layer) + "  weights are too large: " + str(maximum))
 
             # --- Debugging and graphing ---
             # Exit condition

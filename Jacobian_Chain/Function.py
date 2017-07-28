@@ -23,6 +23,18 @@ tau   = 1            # Sigmoid threshold unit
 alpha = 0.5          # Parametrized rectified linear unit
 bank = 50            # Inverse learning function steepness
 
+
+# OPTIMIZATION FUNCTIONS
+opt_grad_descent = Function('conv', 'grad_descent',
+                            [lambda grad, args: -grad])
+
+opt_momentum     = Function('conv', 'momentum',
+                            [lambda grad, args: -grad + args['momentum'] * args['grad_past']])
+
+opt_adagrad      = Function('conv', 'adagrad',
+                            [lambda grad, args: -grad / (np.sqrt(args['grad_past']) + .001)])
+
+
 # BASIS FUNCTIONS: Regression
 basis_identity  = Function('basis', 'identity',
                            [lambda x: x,
