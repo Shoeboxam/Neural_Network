@@ -185,3 +185,15 @@ def diag(array):
         for idx in range(array.shape[-1]):
             elements.append(diag(array[..., idx]))
         return Array(np.stack(elements, array.ndim))
+
+
+# Sanity check to ensure diag correctly embeds a 2D matrix along diagonal of 3D matrix
+# def check_diag(A):
+#     correct = True
+#     A_diagon = diag(A)
+#
+#     for rowid in range(A.shape[1]):
+#         if not np.allclose(np.diag(A.T[rowid]), A_diagon[..., rowid]):
+#             correct = False
+#
+#     return correct

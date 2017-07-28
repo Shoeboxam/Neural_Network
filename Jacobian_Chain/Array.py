@@ -61,3 +61,42 @@ class Array(np.ndarray):
         if self.ndim > 2 or other.ndim > 2:
             return Array(np.einsum('ij...,jl...->il...', self, other))
         return super().__matmul__(other)
+
+
+# Sanity check to ensure 3D matmul is correct
+# from .Function import diag
+
+# def check_mult(A, B):
+#     correct = True
+#     product = A @ B
+#
+#     if A.ndim == 3 and B.ndim == 3:
+#         for idx in range(np.shape(product)[2]):
+#             if not np.allclose(A[:, :, idx] @ B[:, :, idx], product[..., idx]):
+#                 correct = False
+#
+#     elif A.ndim == 2 and B.ndim == 3:
+#         for idx in range(np.shape(product)[2]):
+#             if not np.allclose(A @ B[:, :, idx], product[..., idx]):
+#                 correct = False
+#
+#     elif A.ndim == 3 and B.ndim == 2:
+#         for idx in range(np.shape(product)[2]):
+#             if not np.allclose(A[:, :, idx] @ B, product[..., idx]):
+#                 correct = False
+#
+#     else:
+#         return False
+#
+#     return correct
+
+
+# A = np.random.rand(4, 2).view(Array)
+# B = np.random.rand(4).view(Array)
+
+# print(np.shape(A @ B))
+# print(check_mult(A, B))
+
+
+
+
