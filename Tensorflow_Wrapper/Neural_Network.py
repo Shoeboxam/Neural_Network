@@ -31,12 +31,14 @@ class Neural_Network(object):
             # Generate the hierarchy
             self.hierarchy = self.stimulus
 
-            self.weights = []
-            self.biases = []
             for idx in range(len(units) - 1):
-                self.weights.append(tf.Variable(distribute([units[idx + 1], units[idx]]), name="weight_" + str(idx)))
-                self.biases.append(tf.Variable(tf.zeros((units[idx + 1])), name="bias_" + str(idx)))
-                self.hierarchy = basis[idx](self.weights[-1] @ self.hierarchy + self.biases[-1][..., None])
+                weight = tf.Variable(distribute([units[idx + 1], units[idx]]), name="weight_" + str(idx))
+                self.graph.add_to_collection('weights', weight)
+
+                bias = tf.Variable(tf.zeros((units[idx + 1])), name="bias_" + str(idx))
+                self.graph.add_to_collection('biases', bias)
+
+                self.hierarchy = basis[idx](weight @ self.hierarchy + bias[..., None])
 
             self.session = tf.Session(graph=self.graph)
             self.session.as_default()
@@ -71,14 +73,14 @@ class Neural_Network(object):
         # # Learning parameters
         # if type(learn_step) is float or type(learn_step) is int:
         #     learn_step = [learn_step] * len(self.weights)
-        #
-        # # Decay parameters
-        # if decay_step is None:
-        #     decay_step = learn_step
-        #
-        # if type(decay_step) is float or type(decay_step) is int:
-        #     decay_step = [decay_step] * len(self.weights)
-        #
+
+        # Decay parameters
+        if decay_step is None:
+            decay_step = learn_step
+
+        if type(decay_step) is float or type(decay_step) is int:
+            decay_step = [decay_step] * len(self.units)
+
         # # Moment parameters
         # if moment_step is None:
         #     moment_step = learn_step
@@ -95,7 +97,16 @@ class Neural_Network(object):
             learn_rate = tf.Variable(1., name='learn_rate', trainable=False, dtype=tf.float64)
             learn_rate_step_op = tf.Variable.assign(learn_rate, learn(iteration, iteration_limit))
 
-            train_step = convergence(learning_rate=learn_rate * learn_step).minimize(cost(self.expected, self.hierarchy))
+            # Primary gradient loss
+            tf.add_to_collection('losses', learn_step * cost(self.expected, self.hierarchy))
+
+            # Weight decay losses
+            for idx, layer in enumerate(tf.get_collection('weights')):
+                tf.add_to_collection('losses', decay_step[idx] * tf.tile(decay(layer)[..., None, None], [1, batch_size]))
+
+            # Minimize all losses in the step
+            loss = tf.add_n(tf.get_collection('losses'), name='loss')
+            train_step = convergence(learning_rate=learn_rate).minimize(loss)
 
             tf.global_variables_initializer().run(session=self.session)
 
@@ -104,9 +115,10 @@ class Neural_Network(object):
         converged = False
         while not converged:
             stimulus, expected = environment.sample(quantity=batch_size)
-            self.session.run(train_step, feed_dict={self.stimulus: stimulus, self.expected: expected})
 
+            self.session.run(train_step, feed_dict={self.stimulus: stimulus, self.expected: expected})
             self.session.run(learn_rate_step_op)
+
             iteration_int = self.session.run(iteration_step_op)
             if iteration_limit is not None and iteration_int >= iteration_limit:
                 break

@@ -60,7 +60,7 @@ decay_L1   = Function('decay', 'L1', lambda x: tf.contrib.layers.apply_regulariz
 decay_L2   = Function('decay', 'L2', tf.nn.l2_loss)
 
 decay_L12  = Function('decay', 'L12', lambda x: tf.contrib.layers.apply_regularization(tf.contrib.layers.l1_regularizer(1), x) + tf.nn.l2_loss(x))
-decay_NONE = Function('decay', 'NONE', lambda x: 0)
+decay_NONE = Function('decay', 'NONE', lambda x: tf.zeros(shape=[]))
 
 
 # LEARNING RATE FUNCTIONS

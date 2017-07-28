@@ -84,11 +84,11 @@ train_params = {
     "cost": cost_sum_squared,
 
     # Learning rate function
-    "learn_step": .002,
-    "learn": learn_linear,
+    "learn_step": .001,
+    "learn": learn_fixed,
 
     # Weight decay regularization function
-    "decay_step": 0.0001,
+    "decay_step": 0.00001,
     "decay": decay_L2,
 
     # Momentum preservation

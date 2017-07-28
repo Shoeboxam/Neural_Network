@@ -179,12 +179,11 @@ class Neural_Network(object):
                 # Same for bias and weights
                 learn_rate = learn(iteration, iteration_limit)
 
-                # Compute bias update
+                # Compute bias update; no decay necessary
                 bias_gradient = -learn_step[layer] * dln_db
-                bias_decay = decay_step[layer] * decay(self.biases[layer], d=1)
                 bias_momentum = moment_step[layer] * bias_update[layer]
 
-                bias_update[layer] = learn_rate * (bias_gradient + bias_decay[np.newaxis, :]) + bias_momentum
+                bias_update[layer] = learn_rate * bias_gradient + bias_momentum
 
                 # Compute weight update
                 weight_gradient = -learn_step[layer] * dln_dW
