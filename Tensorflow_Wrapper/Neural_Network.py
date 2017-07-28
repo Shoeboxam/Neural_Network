@@ -20,6 +20,7 @@ class Neural_Network(object):
         # Basis functions
         if type(basis) is not list:
             basis = [basis] * len(units)
+        self.basis = basis
 
         self.graph = tf.Graph()
         with self.graph.as_default():
@@ -27,9 +28,11 @@ class Neural_Network(object):
             # Construct placeholders for the input and expected output variables
             self.stimulus = tf.placeholder(tf.float32, [units[0], None], name='stimulus')
             self.expected = tf.placeholder(tf.float32, [units[-1], None], name='expected')
+            self.dropout = tf.placeholder(tf.float32, name='dropout')
 
             # Generate the hierarchy
             self.hierarchy = self.stimulus
+            self.hierarchy_train = self.stimulus
 
             for idx in range(len(units) - 1):
                 weight = tf.Variable(distribute([units[idx + 1], units[idx]]), name="weight_" + str(idx))
@@ -39,6 +42,8 @@ class Neural_Network(object):
                 self.graph.add_to_collection('biases', bias)
 
                 self.hierarchy = basis[idx](weight @ self.hierarchy + bias[..., None])
+                self.hierarchy_train = tf.nn.dropout(
+                    basis[idx](weight @ self.hierarchy_train + bias[..., None]), self.dropout)
 
             self.session = tf.Session(graph=self.graph)
             self.session.as_default()
@@ -70,9 +75,10 @@ class Neural_Network(object):
 
         # --- Setup parameters ---
 
-        # # Learning parameters
-        # if type(learn_step) is float or type(learn_step) is int:
-        #     learn_step = [learn_step] * len(self.weights)
+        # Learning parameters - Convergence methods can be tweaked for multi-layer step sizes, but seemingly not cost
+        if type(learn_step) is list:
+            print("TF Wrapper: Only using first learning step size.")
+            learn_step = learn_step[0]
 
         # Decay parameters
         if decay_step is None:
@@ -86,9 +92,9 @@ class Neural_Network(object):
         #     moment_step = learn_step
         #
         # if type(moment_step) is float or type(moment_step) is int:
-        #     moment_step = [moment_step] * len(self.weights)
+        #     moment_step = [moment_step] * len(self.units)
 
-        # Add operations to class graph
+        # --- Define Loss ---
         with self.graph.as_default():
 
             iteration = tf.Variable(0, name='iteration', trainable=False, dtype=tf.int32)
@@ -98,32 +104,40 @@ class Neural_Network(object):
             learn_rate_step_op = tf.Variable.assign(learn_rate, learn(iteration, iteration_limit))
 
             # Primary gradient loss
-            tf.add_to_collection('losses', learn_step * cost(self.expected, self.hierarchy))
+            tf.add_to_collection('losses', learn_step * cost(self.expected, self.hierarchy_train))
 
             # Weight decay losses
             for idx, layer in enumerate(tf.get_collection('weights')):
                 tf.add_to_collection('losses', decay_step[idx] * tf.tile(decay(layer)[..., None, None], [1, batch_size]))
 
-            # Minimize all losses in the step
+            # Minimize all losses each step
             loss = tf.add_n(tf.get_collection('losses'), name='loss')
             train_step = convergence(learning_rate=learn_rate).minimize(loss)
 
             tf.global_variables_initializer().run(session=self.session)
 
-        # Actual training
+        # --- Actual training portion ---
         pts = []
         converged = False
+
         while not converged:
             stimulus, expected = environment.sample(quantity=batch_size)
 
-            self.session.run(train_step, feed_dict={self.stimulus: stimulus, self.expected: expected})
+            parameters = {
+                self.stimulus: stimulus,
+                self.expected: expected,
+                self.dropout: 1 - dropout
+            }
+
+            self.session.run(train_step, feed_dict=parameters)
             self.session.run(learn_rate_step_op)
 
+            # --- Debugging and graphing ---
+            # Exit condition
             iteration_int = self.session.run(iteration_step_op)
             if iteration_limit is not None and iteration_int >= iteration_limit:
                 break
 
-            # Stopping conditions, graphs and pretty outputs
             if (graph or epsilon or debug) and iteration_int % 50 == 0:
                 [inputs, expectation] = environment.survey()
                 prediction = self.predict(inputs)

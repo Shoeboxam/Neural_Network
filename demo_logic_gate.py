@@ -89,13 +89,13 @@ train_params = {
 
     # Weight decay regularization function
     "decay_step": 0.00001,
-    "decay": decay_L2,
+    "decay": decay_NONE,
 
     # Momentum preservation
     "moment_step": 0,
 
     # Percent of weights to drop each training iteration
-    "dropout": 0,
+    "dropout": 0.,
 
     "epsilon": .04,           # error allowance
     "iteration_limit": 5000,  # limit on number of iterations to run

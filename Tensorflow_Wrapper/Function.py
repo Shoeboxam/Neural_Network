@@ -55,7 +55,7 @@ cost_softmax_CE     = Function('cost', 'SMCEE',
                                lambda O, P: tf.nn.softmax_cross_entropy_with_logits(labels=O, logits=P))
 
 
-# REGULARIZATION DECAY FUNCTIONS
+# REGULARIZATION DECAY FUNCTIONS # Returns a scalar tensor
 decay_L1   = Function('decay', 'L1', lambda x: tf.contrib.layers.apply_regularization(tf.contrib.layers.l1_regularizer(1), x))
 decay_L2   = Function('decay', 'L2', tf.nn.l2_loss)
 
