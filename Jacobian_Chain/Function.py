@@ -32,7 +32,8 @@ opt_momentum     = Function('conv', 'momentum',
                             [lambda grad, args: -grad + args['momentum'] * args['grad_past']])
 
 opt_adagrad      = Function('conv', 'adagrad',
-                            [lambda grad, args: -grad / (np.sqrt(args['grad_past']) + .001)])
+                            [lambda grad, args: -grad / (np.sqrt(np.diag(
+                                args['grad_past'] @ args['grad_past'].T)) + args['epsilon'])[..., None]])
 
 
 # BASIS FUNCTIONS: Regression

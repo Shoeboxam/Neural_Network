@@ -18,7 +18,7 @@ class Neural_Network(object):
         self.biases = []
         for idx in range(len(units) - 1):
             self.weights.append(Array(distribute(units[idx + 1], units[idx]) / np.sqrt(units[idx])))
-            self.biases.append(Array(np.zeros((units[idx + 1]))))
+            self.biases.append(Array(np.zeros((units[idx + 1], 1))))
 
         # Basis functions
         if type(basis) is not list:
@@ -59,8 +59,8 @@ class Neural_Network(object):
         weight_update = []
         bias_update = []
         for idx in range(len(self.weights)):
-            weight_update.append(Array(np.zeros((*self.weights[idx].shape, batch_size))))
-            bias_update.append(Array(np.zeros((1, *self.biases[idx].shape))))
+            weight_update.append(Array(np.zeros((*self.weights[idx].shape,))))
+            bias_update.append(Array(np.zeros((*self.biases[idx].shape,))))
 
         # --- Setup parameters ---
 
@@ -121,7 +121,6 @@ class Neural_Network(object):
                     data *= np.random.binomial(1, (1.0 - dropout), size=data.shape)
                     # Resize remaining nodes to compensate for loss of nodes
                     data = data.astype(float) * (1.0 / (1 - dropout))
-
                 data = self.weights[layer_id] @ data + self.biases[layer_id]
                 data = self.basis[layer_id](data)
 
@@ -154,6 +153,7 @@ class Neural_Network(object):
                 # ~~~~~~~ Loss derivative phase ~~~~~~~
                 # stimulus = value of previous basis function or input stimulus
                 s = propagate(stimulus, depth=layer, cache=True)
+
                 # reinforcement = W     x s + b
                 r = self.weights[layer] @ s + self.biases[layer]
 
@@ -163,7 +163,7 @@ class Neural_Network(object):
                 # Reinforcement function derivative
                 dr_dWvec_i = []
                 for feature in s.T:
-                    dr_dWvec_i.append(np.kron(np.identity(self.weights[layer].shape[0]), feature.T))
+                    dr_dWvec_i.append(np.kron(feature, np.identity(self.weights[layer].shape[0])))
                 dr_dWvec = Array(np.dstack(dr_dWvec_i))
 
                 # Chain rule for full derivative
@@ -171,7 +171,7 @@ class Neural_Network(object):
                 dln_db = dln_dq @ dq_dq @ dq_dr  # @ dr_db (Identity matrix)
 
                 # Unvectorize
-                dln_dW = np.reshape(dln_dWvec.T, [*self.weights[layer].shape, batch_size])
+                dln_dW = np.reshape(dln_dWvec, [*self.weights[layer].shape, batch_size])
 
                 # ~~~~~~~ Gradient descent phase ~~~~~~~
                 # Same for bias and weights
@@ -180,19 +180,19 @@ class Neural_Network(object):
                 # Compute bias update; no decay necessary
                 bias_gradient = learn_step[layer] * dln_db
 
-                optimizer_args['grad_past'] = bias_update[layer]
-                bias_update[layer] = learn_rate * optimizer(bias_gradient, optimizer_args)
+                optimizer_args['grad_past'] = bias_update[layer].T
+                bias_update[layer] = np.average(learn_rate * optimizer(bias_gradient, optimizer_args), axis=2).T
 
                 # Compute weight update
                 weight_gradient = learn_step[layer] * dln_dW
                 weight_decay = decay_step[layer] * decay(self.weights[layer], d=1)
 
                 optimizer_args['grad_past'] = weight_update[layer]
-                weight_update[layer] = learn_rate * (optimizer(weight_gradient, optimizer_args) + weight_decay)
+                weight_update[layer] = np.average(learn_rate * (optimizer(weight_gradient, optimizer_args) + weight_decay), axis=2)
 
                 # Apply gradient descent
-                self.biases[layer] += np.average(bias_update[layer], axis=2).T
-                self.weights[layer] += np.average(weight_update[layer], axis=2)
+                self.biases[layer] += bias_update[layer]
+                self.weights[layer] += weight_update[layer]
 
                 # ~~~~~~~ Update internal state ~~~~~~~
                 # Store derivative accumulation for next layer
@@ -203,7 +203,7 @@ class Neural_Network(object):
                 if debug:
                     maximum = max(self.weights[layer].min(), self.weights[layer].max(), key=abs)
                     if maximum > 1000:
-                        print("Layer " + str(layer) + "  weights are too large: " + str(maximum))
+                        print("Layer " + str(layer) + " weights are too large: " + str(maximum))
 
             # --- Debugging and graphing ---
             # Exit condition

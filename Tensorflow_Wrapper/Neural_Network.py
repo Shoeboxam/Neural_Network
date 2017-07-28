@@ -91,13 +91,6 @@ class Neural_Network(object):
         if type(decay_step) is float or type(decay_step) is int:
             decay_step = [decay_step] * len(self.units)
 
-        # # Moment parameters
-        # if moment_step is None:
-        #     moment_step = learn_step
-        #
-        # if type(moment_step) is float or type(moment_step) is int:
-        #     moment_step = [moment_step] * len(self.units)
-
         # --- Define Loss ---
         with self.graph.as_default():
 

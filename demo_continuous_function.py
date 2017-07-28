@@ -2,13 +2,13 @@
 from inspect import signature
 
 # Use custom implementation:
-# from Jacobian_Chain import *
+from Jacobian_Chain import *
 
 # Use Tensorflow wrapper:
-from Tensorflow_Wrapper import *
+# from Tensorflow_Wrapper import *
 
 import numpy as np
-np.set_printoptions(suppress=True)
+np.set_printoptions(suppress=True, linewidth=10000)
 
 
 class Continuous:
@@ -87,7 +87,7 @@ environment = Continuous([lambda v: (24 * v**4 - 2 * v**2 + v)], domain=[[-1, 1]
 # ~~~ Create the network ~~~
 init_params = {
     # Shape of network
-    "units": [environment.size_input(), 15, 10, environment.size_output()],
+    "units": [environment.size_input(), 5, 4, environment.size_output()],
 
     # Basis function(s) from Function.py
     "basis": basis_softplus,
@@ -102,7 +102,7 @@ network = Neural_Network(**init_params)
 train_params = {
     # Source of stimuli
     "environment": environment,
-    "batch_size": 1,
+    "batch_size": 10,
 
     # Error function from Function.py
     "cost": cost_sum_squared,
@@ -114,9 +114,6 @@ train_params = {
     # Weight decay regularization function
     "decay_step": 0.0001,
     "decay": decay_NONE,
-
-    # Momentum preservation
-    "moment_step": 0.2,
 
     # Percent of weights to drop each training iteration
     "dropout": 0,

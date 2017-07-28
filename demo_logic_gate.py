@@ -9,7 +9,7 @@ from Jacobian_Chain import *
 import itertools
 import math
 import numpy as np
-np.set_printoptions(suppress=True)
+np.set_printoptions(suppress=True, linewidth=10000)
 
 
 class Logic_Gate:
@@ -53,8 +53,8 @@ class Logic_Gate:
     def error(expect, predict):
         return np.linalg.norm(expect - predict)
 
-# environment = Logic_Gate(np.array([[0], [1], [1], [0]]))
-environment = Logic_Gate(np.array([[0], [1], [1], [0], [1], [0], [0], [0]]))
+environment = Logic_Gate(np.array([[0], [1], [1], [0]]))
+# environment = Logic_Gate(np.array([[0], [1], [1], [0], [1], [0], [0], [0]]))
 # environment = Logic_Gate(np.array([[1], [0], [0], [1], [0], [0], [1], [0]]))
 
 # Notice: The plot will only graph the first dimension of an n-dimensional input.
@@ -76,19 +76,20 @@ network = Neural_Network(**init_params)
 
 # ~~~ Train the network ~~~
 train_params = {
-    "optimizer": opt_momentum,
-    "optimizer_args": {'momentum': 0.2},
+    "optimizer": opt_adagrad,
+    "optimizer_args": {'momentum': 0.2,
+                       'epsilon': .001},
 
     # Source of stimuli
     "environment": environment,
-    "batch_size": 1,
+    "batch_size": 8,
 
     # Error function from Function.py
-    "cost": cost_sum_squared,
+    "cost": cost_cross_entropy,
 
     # Learning rate function
     "learn_step": .001,
-    "learn": learn_fixed,
+    "learn": learn_invroot,
 
     # Weight decay regularization function
     "decay_step": 0.00001,
@@ -98,7 +99,7 @@ train_params = {
     "dropout": 0.,
 
     "epsilon": .04,           # error allowance
-    "iteration_limit": 5000,  # limit on number of iterations to run
+    "iteration_limit": None,  # limit on number of iterations to run
 
     "debug": True,
     "graph": True
@@ -108,4 +109,5 @@ network.train(**train_params)
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()
+print(expectation)
 print(network.predict(stimuli).T)
