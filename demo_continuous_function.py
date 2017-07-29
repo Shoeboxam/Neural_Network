@@ -87,7 +87,7 @@ environment = Continuous([lambda v: (24 * v**4 - 2 * v**2 + v)], domain=[[-1, 1]
 # ~~~ Create the network ~~~
 init_params = {
     # Shape of network
-    "units": [environment.size_input(), 5, 4, environment.size_output()],
+    "units": [environment.size_input(), 20, 10, environment.size_output()],
 
     # Basis function(s) from Function.py
     "basis": basis_softplus,

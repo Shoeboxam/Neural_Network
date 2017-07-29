@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 
 from .Function import *
 from .Array import Array
+from .Optimizer import *
 
 plt.style.use('fivethirtyeight')
 
@@ -47,26 +48,36 @@ class Neural_Network(object):
     # Convergence: grad, newt *not implemented
 
     def train(self, environment, batch_size=1,
-              optimizer=opt_grad_descent,
-              optimizer_args=None,
+              optimizer=None,
               cost=cost_sum_squared,
               learn_step=1e-2, learn=learn_fixed,
               decay_step=None, decay=decay_NONE, dropout=0,
               epsilon=1e-2, iteration_limit=None,
               debug=False, graph=False):
 
-        # Memory of previous gradient
-        weight_update = []
-        bias_update = []
-        for idx in range(len(self.weights)):
-            weight_update.append(Array(np.zeros((*self.weights[idx].shape,))))
-            bias_update.append(Array(np.zeros((*self.biases[idx].shape,))))
-
         # --- Setup parameters ---
 
-        # Initialize optimization arguments
-        if optimizer_args is None:
-            optimizer_args = {}
+        if optimizer is None:
+            optimizer = {'method': 'gradient_descent'}
+
+        # There must be one set of arguments for each layer
+        if type(optimizer) is dict:
+            optimizer = [ref.copy() for ref in [optimizer] * len(self.weights)]
+
+        # Biases and weights have separate sets of optimizers
+        if type(optimizer) is list and type(optimizer[0]) is dict:
+            optimizer = [ref.copy() for ref in [optimizer] * 2]
+
+        # Create optimizers
+        weight_optimizer = []
+        bias_optimizer = []
+        for idx in range(len(self.weights)):
+
+            optimizer[0][idx]['update_prev'] = Array(np.zeros([*self.biases[idx].shape]))
+            bias_optimizer.append(Optimizer(**optimizer[0][idx]))
+
+            optimizer[1][idx]['update_prev'] = Array(np.zeros([*self.weights[idx].shape]))
+            weight_optimizer.append(Optimizer(**optimizer[1][idx]))
 
         # Learning parameters
         if type(learn_step) is float or type(learn_step) is int:
@@ -171,28 +182,16 @@ class Neural_Network(object):
                 dln_db = dln_dq @ dq_dq @ dq_dr  # @ dr_db (Identity matrix)
 
                 # Unvectorize
-                dln_dW = np.reshape(dln_dWvec, [*self.weights[layer].shape, batch_size])
+                dln_dW = np.reshape(dln_dWvec.T, [*self.weights[layer].shape, batch_size])
 
                 # ~~~~~~~ Gradient descent phase ~~~~~~~
-                # Same for bias and weights
-                learn_rate = learn(iteration, iteration_limit)
 
-                # Compute bias update; no decay necessary
-                bias_gradient = learn_step[layer] * dln_db
-
-                optimizer_args['grad_past'] = bias_update[layer].T
-                bias_update[layer] = np.average(learn_rate * optimizer(bias_gradient, optimizer_args), axis=2).T
-
-                # Compute weight update
-                weight_gradient = learn_step[layer] * dln_dW
+                learn_rate = learn(iteration, iteration_limit) * learn_step[layer]
                 weight_decay = decay_step[layer] * decay(self.weights[layer], d=1)
 
-                optimizer_args['grad_past'] = weight_update[layer]
-                weight_update[layer] = np.average(learn_rate * (optimizer(weight_gradient, optimizer_args) + weight_decay), axis=2)
-
-                # Apply gradient descent
-                self.biases[layer] += bias_update[layer]
-                self.weights[layer] += weight_update[layer]
+                # Take a step towards the minima
+                self.biases[layer] += learn_rate * bias_optimizer[layer](np.average(dln_db, axis=2).T)
+                self.weights[layer] += learn_rate * (weight_optimizer[layer](np.average(dln_dW, axis=2)) + weight_decay)
 
                 # ~~~~~~~ Update internal state ~~~~~~~
                 # Store derivative accumulation for next layer
@@ -240,4 +239,3 @@ class Neural_Network(object):
                     environment.plot(plt, prediction)
 
                     plt.pause(0.00001)
-

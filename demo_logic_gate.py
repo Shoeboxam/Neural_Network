@@ -20,7 +20,7 @@ class Logic_Gate:
             raise TypeError('Length of expectation must be a power of two.')
 
         self._expectation = expectation
-        self._environment = np.array([i for i in itertools.product([0, 1], repeat=int(bit_length))])
+        self._environment = np.array([i for i in itertools.product([-1, 1], repeat=int(bit_length))])
 
     def sample(self, quantity=1):
         choice = np.random.randint(np.shape(self._environment)[0], size=quantity)
@@ -38,11 +38,11 @@ class Logic_Gate:
 
     def plot(self, plt, predict):
         data = np.zeros((2**self.size_input(), 2))
-        predict = np.clip(predict[0], 0, 1)
+        predict = np.clip(predict[0], -1, 1)
 
-        for idx, index_bits in enumerate(self._environment):
+        for idx, index_bits in enumerate((self._environment.astype(float) + 1) / 2):
             out = 0
-            for bit in index_bits:
+            for bit in index_bits.astype(int):
                 out = (out << 1) | bit
             data[out, 1] = predict[idx]
         data[:, 0] = self._expectation.T[0]
@@ -53,12 +53,12 @@ class Logic_Gate:
     def error(expect, predict):
         return np.linalg.norm(expect - predict)
 
-environment = Logic_Gate(np.array([[0], [1], [1], [0]]))
-# environment = Logic_Gate(np.array([[0], [1], [1], [0], [1], [0], [0], [0]]))
-# environment = Logic_Gate(np.array([[1], [0], [0], [1], [0], [0], [1], [0]]))
+# environment = Logic_Gate(np.array([[-1], [1], [1], [-1]]))
+environment = Logic_Gate(np.array([[-1], [1], [1], [-1], [1], [-1], [-1], [-1]]))
+# environment = Logic_Gate(np.array([[1], [-1], [-1], [1], [-1], [-1], [1], [-1]]))
 
 # Notice: The plot will only graph the first dimension of an n-dimensional input.
-# environment = Logic_Gate(np.array([[0, 0], [1, 0], [1, 0], [0, 1]]))
+# environment = Logic_Gate(np.array([[-1, -1], [1, -1], [1, -1], [-1, 1]]))
 
 # ~~~ Create the network ~~~
 init_params = {
@@ -76,9 +76,12 @@ network = Neural_Network(**init_params)
 
 # ~~~ Train the network ~~~
 train_params = {
-    "optimizer": opt_adagrad,
-    "optimizer_args": {'momentum': 0.2,
-                       'epsilon': .001},
+    "optimizer": {
+        'method': 'adagrad',
+        'momentum_step': 0.2,
+        'epsilon': .001,
+        'forget': 0.1
+    },
 
     # Source of stimuli
     "environment": environment,
@@ -88,7 +91,7 @@ train_params = {
     "cost": cost_cross_entropy,
 
     # Learning rate function
-    "learn_step": .001,
+    "learn_step": .002,
     "learn": learn_invroot,
 
     # Weight decay regularization function

@@ -24,18 +24,6 @@ alpha = 0.5          # Parametrized rectified linear unit
 bank = 50            # Inverse learning function steepness
 
 
-# OPTIMIZATION FUNCTIONS
-opt_grad_descent = Function('conv', 'grad_descent',
-                            [lambda grad, args: -grad])
-
-opt_momentum     = Function('conv', 'momentum',
-                            [lambda grad, args: -grad + args['momentum'] * args['grad_past']])
-
-opt_adagrad      = Function('conv', 'adagrad',
-                            [lambda grad, args: -grad / (np.sqrt(np.diag(
-                                args['grad_past'] @ args['grad_past'].T)) + args['epsilon'])[..., None]])
-
-
 # BASIS FUNCTIONS: Regression
 basis_identity  = Function('basis', 'identity',
                            [lambda x: x,
@@ -186,7 +174,6 @@ def diag(array):
         for idx in range(array.shape[-1]):
             elements.append(diag(array[..., idx]))
         return Array(np.stack(elements, array.ndim))
-
 
 # Sanity check to ensure diag correctly embeds a 2D matrix along diagonal of 3D matrix
 # def check_diag(A):

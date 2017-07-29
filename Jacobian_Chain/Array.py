@@ -62,6 +62,10 @@ class Array(np.ndarray):
             return Array(np.einsum('ij...,jl...->il...', self, other))
         return super().__matmul__(other)
 
+    @property
+    def T(self):
+        return Array(np.swapaxes(self, 0, 1))
+
 
 # Sanity check to ensure 3D matmul is correct
 # from .Function import diag
@@ -96,7 +100,3 @@ class Array(np.ndarray):
 
 # print(np.shape(A @ B))
 # print(check_mult(A, B))
-
-
-
-
