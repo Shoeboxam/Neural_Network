@@ -77,10 +77,10 @@ network = Neural_Network(**init_params)
 # ~~~ Train the network ~~~
 train_params = {
     "optimizer": {
-        'method': 'adagrad',
+        'method': 'rmsprop',
         'momentum_step': 0.2,
         'epsilon': .001,
-        'forget': 0.1
+        'forget': 0.9
     },
 
     # Source of stimuli
@@ -91,7 +91,7 @@ train_params = {
     "cost": cost_cross_entropy,
 
     # Learning rate function
-    "learn_step": .002,
+    "learn_step": .05,
     "learn": learn_invroot,
 
     # Weight decay regularization function

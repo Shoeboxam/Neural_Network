@@ -7,6 +7,9 @@ class Optimizer(dict):
         self.__dict__ = self
         self._evaluator = getattr(self, kwargs['method'])
 
+        if kwargs['method'] is 'rmsprop':
+            self._mean_square = np.zeros([kwargs['update_prev'].shape[0]] * 2)
+
     def __call__(self, grad):
         return self._evaluator(grad)
 
@@ -20,16 +23,8 @@ class Optimizer(dict):
         return update
 
     def adagrad(self, grad):
-        update = -grad / (np.sqrt(np.diag(self.update_prev @ self.update_prev.T)) + self.epsilon)[..., None]
-        self.update_prev = update
-        return update
+        return -grad / (np.sqrt(np.diag(grad @ grad.T)) + self.epsilon)[..., None]
 
     def rmsprop(self, grad):
-        # Incomplete
-        grad_outer = self.update_prev @ self.update_prev.T
-        if self._mean_square is None:
-            self._mean_square = grad_outer
-        else:
-            self._mean_square = self.forget * self._mean_square + (1 - self.forget) * grad_outer
-
-        return -grad / 1
+        self._mean_square = self.forget * self._mean_square + (1 - self.forget) * grad @ grad.T
+        return -grad / (np.sqrt(np.diag(self._mean_square)) + self.epsilon)[..., None]
