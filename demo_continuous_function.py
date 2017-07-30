@@ -108,11 +108,11 @@ train_params = {
     "cost": cost_sum_squared,
 
     # Learning rate
-    "learn_step": .001,
+    "learn_step": .1,
     "anneal": anneal_fixed,
 
     # Weight decay regularization function
-    "decay_step": 0.0001,
+    "decay_step": 0.01,
     "decay": decay_NONE,
 
     # Percent of weights to drop each training iteration

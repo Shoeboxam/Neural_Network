@@ -76,21 +76,21 @@ network = Neural_Network(**init_params)
 
 # ~~~ Train the network ~~~
 train_params = {
-    "optimizer": opt_adadelta,
+    "optimizer": opt_nadam,
 
     # Source of stimuli
     "environment": environment,
     "batch_size": 8,
 
     # Error function from Function.py
-    "cost": cost_cross_entropy,
+    "cost": cost_sum_squared,
 
     # Learning rate
-    "learn_step": .0001,
-    "anneal": anneal_invroot,
+    "learn_step": .002,
+    "anneal": anneal_fixed,
 
     # Weight decay regularization function
-    "decay_step": 0.00001,
+    "decay_step": 0.0,
     "decay": decay_NONE,
 
     # Percent of weights to drop each training iteration

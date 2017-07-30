@@ -180,11 +180,11 @@ class Neural_Network(object):
                 # ~~~~~~~ Gradient descent phase ~~~~~~~
 
                 learn_rate = anneal(iteration, iteration_limit) * learn_step[layer]
-                weight_decay = decay_step[layer] * decay(self.weights[layer], d=1)
+                weight_decay = learn_rate * decay_step[layer] * decay(self.weights[layer], d=1)
 
                 # Take a step towards the minima
-                self.biases[layer] += bias_optimizer[layer](learn_rate, np.average(dln_db, axis=2).T)
-                self.weights[layer] += (weight_optimizer[layer](learn_rate, np.average(dln_dW, axis=2)) + weight_decay)
+                self.biases[layer] += bias_optimizer[layer](learn_rate, np.average(dln_db, axis=2).T, iteration)
+                self.weights[layer] += weight_optimizer[layer](learn_rate, np.average(dln_dW, axis=2), iteration) - weight_decay
 
                 # ~~~~~~~ Update internal state ~~~~~~~
                 # Store derivative accumulation for next layer
