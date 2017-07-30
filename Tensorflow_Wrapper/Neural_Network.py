@@ -58,7 +58,6 @@ class Neural_Network(object):
     # Learn:       learning function
     # Decay step:  weight decay parameter
     # Decay:       weight decay function
-    # Moment step: momentum strength parameter
     # Dropout:     percent of nodes to drop from each layer
     # Epsilon:     convergence allowance
     # Iterations:  number of iterations to run. If none, then no limit
@@ -67,17 +66,13 @@ class Neural_Network(object):
 
     def train(self, environment, batch_size=1,
               optimizer=opt_grad_descent,
-              optimizer_args=None,
               cost=cost_sum_squared,
-              learn_step=1e-2, learn=learn_fixed,
+              learn_step=1e-2, anneal=anneal_fixed,
               decay_step=None, decay=decay_NONE, dropout=0,
               epsilon=1e-2, iteration_limit=None,
               debug=False, graph=False):
 
         # --- Setup training parameters ---
-
-        if optimizer_args is None:
-            optimizer_args = {}
 
         # Learning parameters - Convergence methods can be tweaked for multi-layer step sizes, but seemingly not cost
         if type(learn_step) is list:
@@ -98,7 +93,7 @@ class Neural_Network(object):
             iteration_step_op = tf.Variable.assign_add(iteration, 1)
 
             learn_rate = tf.Variable(1., name='learn_rate', trainable=False, dtype=tf.float64)
-            learn_rate_step_op = tf.Variable.assign(learn_rate, learn(iteration, iteration_limit))
+            learn_rate_step_op = tf.Variable.assign(learn_rate, anneal(iteration, iteration_limit))
 
             # Primary gradient loss
             tf.add_to_collection('losses', learn_step * cost(self.expected, self.hierarchy_train))

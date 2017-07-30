@@ -76,7 +76,7 @@ network = Neural_Network(**init_params)
 
 # ~~~ Train the network ~~~
 train_params = {
-    "optimizer": opt_nesterov,
+    "optimizer": opt_adadelta,
 
     # Source of stimuli
     "environment": environment,
@@ -85,9 +85,9 @@ train_params = {
     # Error function from Function.py
     "cost": cost_cross_entropy,
 
-    # Learning rate function
-    "learn_step": .05,
-    "anneal": learn_invroot,
+    # Learning rate
+    "learn_step": .0001,
+    "anneal": anneal_invroot,
 
     # Weight decay regularization function
     "decay_step": 0.00001,

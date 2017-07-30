@@ -2,10 +2,10 @@
 from inspect import signature
 
 # Use custom implementation:
-from Jacobian_Chain import *
+# from Jacobian_Chain import *
 
 # Use Tensorflow wrapper:
-# from Tensorflow_Wrapper import *
+from Tensorflow_Wrapper import *
 
 import numpy as np
 np.set_printoptions(suppress=True, linewidth=10000)
@@ -107,9 +107,9 @@ train_params = {
     # Error function from Function.py
     "cost": cost_sum_squared,
 
-    # Learning rate function
+    # Learning rate
     "learn_step": .001,
-    "anneal": learn_fixed,
+    "anneal": anneal_fixed,
 
     # Weight decay regularization function
     "decay_step": 0.0001,

@@ -122,16 +122,13 @@ train_params = {
     # Error function from Function.py
     "cost": cost_cross_entropy,
 
-    # Learning rate function
+    # Learning rate
     "learn_step": .5,
-    "anneal": learn_fixed,
+    "anneal": anneal_fixed,
 
     # Weight decay regularization function
     "decay_step": 0.0001,
     "decay": decay_NONE,
-
-    # Momentum preservation
-    "moment_step": 0,
 
     # Percent of weights to drop each training iteration
     "dropout": 0,

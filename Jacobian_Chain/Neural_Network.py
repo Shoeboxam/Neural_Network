@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 from .Function import *
 from .Array import Array
-from .Optimizer import *
+from .Optimizer import Optimizer
 
 plt.style.use('fivethirtyeight')
 
@@ -50,7 +50,7 @@ class Neural_Network(object):
     def train(self, environment, batch_size=1,
               optimizer=None,
               cost=cost_sum_squared,
-              learn_step=1e-2, anneal=learn_fixed,
+              learn_step=1e-2, anneal=anneal_fixed,
               decay_step=None, decay=decay_NONE, dropout=0,
               epsilon=1e-2, iteration_limit=None,
               debug=False, graph=False):
@@ -60,29 +60,17 @@ class Neural_Network(object):
         if optimizer is None:
             optimizer = {'method': 'gradient_descent'}
 
-        # There must be one set of arguments for each layer
-        if type(optimizer) is dict:
-            optimizer = [ref.copy() for ref in [optimizer] * len(self.weights)]
-
-        # Biases and weights have separate sets of optimizers
-        preferences = {
-            'biases': [ref.copy() for ref in optimizer],
-            'weights': [ref.copy() for ref in optimizer]
-        }
-
         # Create optimizers
         weight_optimizer = []
         bias_optimizer = []
         for idx in range(len(self.weights)):
 
-            # Only nesterov and momentum store previous updates
-            if preferences['biases'][idx]['method'] in ['momentum', 'nesterov']:
-                preferences['biases'][idx]['update'] = Array(np.zeros([*self.biases[idx].shape]))
-            if preferences['weights'][idx]['method'] in ['momentum', 'nesterov']:
-                preferences['weights'][idx]['update'] = Array(np.zeros([*self.weights[idx].shape]))
+            # Shapes are needed to initialize history variables
+            optimizer['shape'] = self.biases[idx].shape
+            bias_optimizer.append(Optimizer(**optimizer))
 
-            bias_optimizer.append(Optimizer(**preferences['biases'][idx]))
-            weight_optimizer.append(Optimizer(**preferences['weights'][idx]))
+            optimizer['shape'] = self.weights[idx].shape
+            weight_optimizer.append(Optimizer(**optimizer))
 
         # Learning parameters
         if type(learn_step) is float or type(learn_step) is int:
