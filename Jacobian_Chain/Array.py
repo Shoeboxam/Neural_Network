@@ -27,6 +27,10 @@ class Array(np.ndarray):
         return np.add(self, other)
 
     def __iadd__(self, other):
+        # Prevents broken reference
+        if self.ndim == 2 and other.ndim == 2:
+            return super().__iadd__(other)
+
         return self.__add__(other)
 
     def __sub__(self, other):

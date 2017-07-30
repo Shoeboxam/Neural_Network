@@ -124,7 +124,7 @@ train_params = {
 
     # Learning rate function
     "learn_step": .5,
-    "learn": learn_fixed,
+    "anneal": learn_fixed,
 
     # Weight decay regularization function
     "decay_step": 0.0001,

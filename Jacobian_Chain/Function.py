@@ -113,20 +113,20 @@ decay_NONE = Function('decay', 'NONE',
                       [lambda x: np.zeros([x.shape[1]] * 2), lambda x: np.zeros(x.shape)])
 
 
-# LEARNING RATE FUNCTIONS
-learn_fixed   = Function('learn', 'fixed',
+# ANNEALING FUNCTIONS (learning rate)
+anneal_fixed   = Function('learn', 'fixed',
                          [lambda t, i: 1])
 
-learn_linear  = Function('learn', 'linear',
+anneal_linear  = Function('learn', 'linear',
                          [lambda t, i: 1 - t/i])
 
-learn_inverse = Function('learn', 'inverse',
+anneal_inverse = Function('learn', 'inverse',
                          [lambda t, i: bank / (bank + t)])
 
-learn_power   = Function('learn', 'power',
+anneal_power   = Function('learn', 'power',
                          [lambda t, i: np.exp(t/i)])
 
-learn_invroot = Function('learn', 'invroot',
+anneal_invroot = Function('learn', 'invroot',
                          [lambda t, i: 1 / np.sqrt(t)])
 
 

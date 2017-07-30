@@ -36,11 +36,11 @@ class Neural_Network(object):
 
     # Environment: class with a 'sample stimulus' method
     # Batch size:  number of samples per training epoch
+    # Optimizer:   dictionary of optimizer initialization settings
     # Learn step:  learning parameter
     # Learn:       learning function
     # Decay step:  weight decay parameter
     # Decay:       weight decay function
-    # Moment step: momentum strength parameter
     # Dropout:     percent of nodes to drop from each layer
     # Epsilon:     convergence allowance
     # Iterations:  number of iterations to run. If none, then no limit
@@ -50,7 +50,7 @@ class Neural_Network(object):
     def train(self, environment, batch_size=1,
               optimizer=None,
               cost=cost_sum_squared,
-              learn_step=1e-2, learn=learn_fixed,
+              learn_step=1e-2, anneal=learn_fixed,
               decay_step=None, decay=decay_NONE, dropout=0,
               epsilon=1e-2, iteration_limit=None,
               debug=False, graph=False):
@@ -65,19 +65,24 @@ class Neural_Network(object):
             optimizer = [ref.copy() for ref in [optimizer] * len(self.weights)]
 
         # Biases and weights have separate sets of optimizers
-        if type(optimizer) is list and type(optimizer[0]) is dict:
-            optimizer = [ref.copy() for ref in [optimizer] * 2]
+        preferences = {
+            'biases': [ref.copy() for ref in optimizer],
+            'weights': [ref.copy() for ref in optimizer]
+        }
 
         # Create optimizers
         weight_optimizer = []
         bias_optimizer = []
         for idx in range(len(self.weights)):
 
-            optimizer[0][idx]['update_prev'] = Array(np.zeros([*self.biases[idx].shape]))
-            bias_optimizer.append(Optimizer(**optimizer[0][idx]))
+            # Only nesterov and momentum store previous updates
+            if preferences['biases'][idx]['method'] in ['momentum', 'nesterov']:
+                preferences['biases'][idx]['update'] = Array(np.zeros([*self.biases[idx].shape]))
+            if preferences['weights'][idx]['method'] in ['momentum', 'nesterov']:
+                preferences['weights'][idx]['update'] = Array(np.zeros([*self.weights[idx].shape]))
 
-            optimizer[1][idx]['update_prev'] = Array(np.zeros([*self.weights[idx].shape]))
-            weight_optimizer.append(Optimizer(**optimizer[1][idx]))
+            bias_optimizer.append(Optimizer(**preferences['biases'][idx]))
+            weight_optimizer.append(Optimizer(**preferences['weights'][idx]))
 
         # Learning parameters
         if type(learn_step) is float or type(learn_step) is int:
@@ -186,12 +191,12 @@ class Neural_Network(object):
 
                 # ~~~~~~~ Gradient descent phase ~~~~~~~
 
-                learn_rate = learn(iteration, iteration_limit) * learn_step[layer]
+                learn_rate = anneal(iteration, iteration_limit) * learn_step[layer]
                 weight_decay = decay_step[layer] * decay(self.weights[layer], d=1)
 
                 # Take a step towards the minima
-                self.biases[layer] += learn_rate * bias_optimizer[layer](np.average(dln_db, axis=2).T)
-                self.weights[layer] += learn_rate * (weight_optimizer[layer](np.average(dln_dW, axis=2)) + weight_decay)
+                self.biases[layer] += bias_optimizer[layer](learn_rate, np.average(dln_db, axis=2).T)
+                self.weights[layer] += (weight_optimizer[layer](learn_rate, np.average(dln_dW, axis=2)) + weight_decay)
 
                 # ~~~~~~~ Update internal state ~~~~~~~
                 # Store derivative accumulation for next layer

@@ -76,12 +76,7 @@ network = Neural_Network(**init_params)
 
 # ~~~ Train the network ~~~
 train_params = {
-    "optimizer": {
-        'method': 'rmsprop',
-        'momentum_step': 0.2,
-        'epsilon': .001,
-        'forget': 0.9
-    },
+    "optimizer": opt_nesterov,
 
     # Source of stimuli
     "environment": environment,
@@ -92,7 +87,7 @@ train_params = {
 
     # Learning rate function
     "learn_step": .05,
-    "learn": learn_invroot,
+    "anneal": learn_invroot,
 
     # Weight decay regularization function
     "decay_step": 0.00001,
@@ -113,4 +108,4 @@ network.train(**train_params)
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()
 print(expectation)
-print(network.predict(stimuli).T)
+print(network.predict(stimuli))

@@ -75,16 +75,16 @@ decay_L12  = Function('decay', 'L12', lambda x: tf.contrib.layers.apply_regulari
 decay_NONE = Function('decay', 'NONE', lambda x: tf.zeros(shape=[]))
 
 
-# LEARNING RATE FUNCTIONS
-learn_fixed   = Function('learn', 'fixed', lambda t, i: 1)
+# ANNEALING FUNCTIONS (learning rate)
+anneal_fixed   = Function('learn', 'fixed', lambda t, i: 1)
 
-learn_linear  = Function('learn', 'linear', lambda t, i: 1 - t/i)
+anneal_linear  = Function('learn', 'linear', lambda t, i: 1 - t/i)
 
-learn_inverse = Function('learn', 'inverse', lambda t, i: bank / (bank + t))
+anneal_inverse = Function('learn', 'inverse', lambda t, i: bank / (bank + t))
 
-learn_power   = Function('learn', 'power', lambda t, i: tf.exp(t/i))
+anneal_power   = Function('learn', 'power', lambda t, i: tf.exp(t/i))
 
-learn_invroot = Function('learn', 'invroot', lambda t, i: 1 / tf.sqrt(t))
+anneal_invroot = Function('learn', 'invroot', lambda t, i: 1 / tf.sqrt(t))
 
 
 # DISTRIBUTION FUNCTIONS
