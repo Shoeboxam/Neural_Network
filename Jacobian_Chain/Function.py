@@ -1,5 +1,5 @@
 import numpy as np
-from .Array import Array
+from Jacobian_Chain.Array import Array
 
 
 class Function(object):
@@ -99,18 +99,15 @@ cost_softmax_CEE    = Function('cost', 'SMCEE',
                                [lambda O, P: (O * np.log(softmax(P))) + (1 - O) * np.log(1 - softmax(P)),
                                 lambda O, P: softmax(P) - O])
 
-# REGULARIZATION DECAY FUNCTIONS
-decay_L1   = Function('decay', 'L1',
+# REGULARIZATION FUNCTIONS (weight decay)
+reg_L1   = Function('decay', 'L1',
                       [lambda x: np.linalg.norm(x), lambda x: piecewise(x, -1, 1)])
 
-decay_L2   = Function('decay', 'L2',
+reg_L2   = Function('decay', 'L2',
                       [lambda x: x.T @ x, lambda x: 2*x])
 
-decay_L12  = Function('decay', 'L12',
+reg_L12  = Function('decay', 'L12',
                       [lambda x: decay_L1(x) + decay_L2(x), lambda x: decay_L1(x, d=1) + decay_L2(x, d=1)])
-
-decay_NONE = Function('decay', 'NONE',
-                      [lambda x: np.zeros([x.shape[1]] * 2), lambda x: np.zeros(x.shape)])
 
 
 # ANNEALING FUNCTIONS (learning rate)

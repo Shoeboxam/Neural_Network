@@ -36,7 +36,7 @@ class Logic_Gate:
     def size_output(self):
         return np.shape(self._expectation)[1]
 
-    def plot(self, plt, predict):
+    def plot(self, plt, points, predict):
         data = np.zeros((2**self.size_input(), 2))
         predict = np.clip(predict[0], -1, 1)
 
@@ -61,49 +61,43 @@ environment = Logic_Gate(np.array([[-1], [1], [1], [-1], [1], [-1], [-1], [-1]])
 # environment = Logic_Gate(np.array([[-1, -1], [1, -1], [1, -1], [-1, 1]]))
 
 # ~~~ Create the network ~~~
-init_params = {
+network_params = {
     # Shape of network
     "units": [environment.size_input(), 20, 10, environment.size_output()],
 
-    # Basis function(s) from Function.py
+    # Basis function(s) from Optimizer.py
     "basis": basis_bent,
 
     # Weight initialization distribution
     "distribute": dist_uniform
     }
 
-network = Neural_Network(**init_params)
+network = Network(**network_params)
 
 # ~~~ Train the network ~~~
-train_params = {
-    "optimizer": opt_nadam,
-
-    # Source of stimuli
-    "environment": environment,
+optimizer_params = {
+    "cost": cost_cross_entropy,
     "batch_size": 8,
 
-    # Error function from Function.py
-    "cost": cost_sum_squared,
-
     # Learning rate
-    "learn_step": .002,
+    "learn_step": .0,
     "anneal": anneal_fixed,
 
     # Weight decay regularization function
-    "decay_step": 0.0,
-    "decay": decay_NONE,
+    "regularize_step": 0.0,
+    "regularizer": reg_L2,
 
     # Percent of weights to drop each training iteration
-    "dropout": 0.,
+    "dropout_step": 0.0,
 
-    "epsilon": .04,           # error allowance
-    "iteration_limit": None,  # limit on number of iterations to run
+    "epsilon": 0.04,          # error allowance
+    "iteration_limit": 5000,  # limit on number of iterations to run
 
     "debug": True,
     "graph": True
     }
 
-network.train(**train_params)
+Adadelta(network, environment, **optimizer_params).minimize()
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()

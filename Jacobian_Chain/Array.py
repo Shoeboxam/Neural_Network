@@ -39,22 +39,6 @@ class Array(np.ndarray):
     def __isub__(self, other):
         return self.__add__(-other)
 
-    def __truediv__(self, other):
-        if type(self) in self._types or type(other) in self._types:
-            return super().__truediv__(other)
-
-        # Adagrad has a 3D elementwise division
-        if self.ndim == 2 and other.ndim == 1:
-            return Array(np.divide(self, np.tile(other[..., np.newaxis], self.shape[1])))
-        if self.ndim == 1 and other.ndim == 2:
-            return Array(np.divide(np.tile(self[..., np.newaxis], other.shape[1]), other))
-
-        if self.ndim == 3 and other.ndim == 2:
-            return Array(np.divide(self, np.tile(other[..., np.newaxis], self.shape[2])))
-        if self.ndim == 2 and other.ndim == 3:
-            return Array(np.divide(np.tile(self[..., np.newaxis], other.shape[2]), other))
-        return np.divide(self, other)
-
     def __matmul__(self, other):
         """Implicitly broadcast and vectorize matrix multiplication along axis 3"""
         if type(self) in self._types or type(other) in self._types:
@@ -72,7 +56,7 @@ class Array(np.ndarray):
 
 
 # Sanity check to ensure 3D matmul is correct
-# from .Function import diag
+# from .Optimize import diag
 
 # def check_mult(A, B):
 #     correct = True

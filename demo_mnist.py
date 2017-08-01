@@ -100,26 +100,24 @@ class MNIST:
 environment = MNIST()
 
 # ~~~ Create the network ~~~
-init_params = {
+network_params = {
     # Shape of network
     "units": [environment.size_input(), 100, 100, environment.size_output()],
 
-    # Basis function(s) from Function.py
+    # Basis function(s) from Optimizer.py
     "basis": [basis_bent, basis_bent, basis_softmax],
 
     # Distribution to use for weight initialization
     "distribute": dist_normal
     }
 
-network = Neural_Network(**init_params)
+network = Network(**network_params)
 
 # ~~~ Train the network ~~~
-train_params = {
+optimizer_params = {
     # Source of stimuli
-    "environment": environment,
     "batch_size": 1,
 
-    # Error function from Function.py
     "cost": cost_cross_entropy,
 
     # Learning rate
@@ -127,8 +125,8 @@ train_params = {
     "anneal": anneal_fixed,
 
     # Weight decay regularization function
-    "decay_step": 0.0001,
-    "decay": decay_NONE,
+    "regularize_step": 0.0,
+    "regularizer": reg_L2,
 
     # Percent of weights to drop each training iteration
     "dropout": 0,
@@ -142,8 +140,8 @@ train_params = {
     "graph": False
     }
 
-network.train(**train_params)
+Nesterov(network, environment, **optimizer_params).minimize()
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()
-print(network.predict(stimuli).T)
+print(network.predict(stimuli))

@@ -85,26 +85,25 @@ class Continuous:
 environment = Continuous([lambda v: (24 * v**4 - 2 * v**2 + v)], domain=[[-1, 1]])
 
 # ~~~ Create the network ~~~
-init_params = {
+network_params = {
     # Shape of network
     "units": [environment.size_input(), 20, 10, environment.size_output()],
 
-    # Basis function(s) from Function.py
+    # Basis function(s) from Optimizer.py
     "basis": basis_softplus,
 
     # Weight initialization distribution
     "distribute": dist_normal
     }
 
-network = Neural_Network(**init_params)
+network = Network(**network_params)
 
 # ~~~ Train the network ~~~
-train_params = {
+optimizer_params = {
     # Source of stimuli
-    "environment": environment,
     "batch_size": 10,
 
-    # Error function from Function.py
+    # Error function from Optimizer.py
     "cost": cost_sum_squared,
 
     # Learning rate
@@ -112,8 +111,8 @@ train_params = {
     "anneal": anneal_fixed,
 
     # Weight decay regularization function
-    "decay_step": 0.01,
-    "decay": decay_NONE,
+    "regularize_step": 0.0,
+    "regularizer": reg_L2,
 
     # Percent of weights to drop each training iteration
     "dropout": 0,
@@ -125,7 +124,7 @@ train_params = {
     "graph": True
     }
 
-network.train(**train_params)
+Nadam(network, environment, **optimizer_params).minimize()
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()

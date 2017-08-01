@@ -1,3 +1,3 @@
+from .Network import Network
+from .Optimize.Backpropagation import *
 from .Function import *
-from .Neural_Network import Neural_Network
-from .Optimizer import *
