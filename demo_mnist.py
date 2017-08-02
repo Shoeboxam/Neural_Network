@@ -1,8 +1,8 @@
 # Use custom implementation:
-# from Jacobian_Chain import *
+from Jacobian_Chain import *
 
 # Use Tensorflow_Wrapper wrapper:
-from Tensorflow_Wrapper import *
+# from Tensorflow_Wrapper import *
 
 import urllib.request
 from io import BytesIO
@@ -86,14 +86,14 @@ class MNIST:
     def size_output(self):
         return np.size(self.train_labels[0])
 
-    def plot(self, plt, predict):
+    def plot(self, plt, points, predict):
         # Do not attempt to plot an image
         pass
 
     @staticmethod
     def error(expect, predict):
-        predict_id = np.argmax(predict, axis=1)
-        expect_id = np.argmax(expect, axis=1)
+        predict_id = np.argmax(predict, axis=0)
+        expect_id = np.argmax(expect, axis=0)
         return 1.0 - np.mean((predict_id == expect_id).astype(float))
 
 
@@ -102,13 +102,14 @@ environment = MNIST()
 # ~~~ Create the network ~~~
 network_params = {
     # Shape of network
-    "units": [environment.size_input(), 100, 100, environment.size_output()],
+    "units": [environment.size_input(), 20, 100, 50, environment.size_output()],
 
     # Basis function(s) from Optimizer.py
-    "basis": [basis_bent, basis_bent, basis_softmax],
+    "basis": basis_bent,
+    "basis_final": basis_softmax,
 
     # Distribution to use for weight initialization
-    "distribute": dist_normal
+    "distribute": dist_uniform
     }
 
 network = Network(**network_params)
@@ -116,12 +117,12 @@ network = Network(**network_params)
 # ~~~ Train the network ~~~
 optimizer_params = {
     # Source of stimuli
-    "batch_size": 1,
+    "batch_size": 10,
 
-    "cost": cost_cross_entropy,
+    "cost": cost_sum_squared,
 
     # Learning rate
-    "learn_step": .5,
+    "learn_step": .1,
     "anneal": anneal_fixed,
 
     # Weight decay regularization function
@@ -129,18 +130,18 @@ optimizer_params = {
     "regularizer": reg_L2,
 
     # Percent of weights to drop each training iteration
-    "dropout": 0,
+    "dropout": 0.0,
 
-    "epsilon": .04,           # error allowance
+    "epsilon": 0.04,           # error allowance
     "iteration_limit": 10000,  # limit on number of iterations to run
 
     "debug": True,
 
     # The error measurement used in the mnist graph is highly susceptible to sampling error
-    "graph": False
+    "graph": True
     }
 
-Nesterov(network, environment, **optimizer_params).minimize()
+Nadam(network, environment, **optimizer_params).minimize()
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()

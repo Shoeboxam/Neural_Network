@@ -107,17 +107,19 @@ class Backpropagation(Optimize):
             dq_dr = Array(self.network.basis[layer](r, d=1))
 
             # Reinforcement function derivative
-            dr_dWvec_i = []
-            for feature in np.vstack((s[layer], bias)).T:
-                dr_dWvec_i.append(np.kron(np.identity(self.network.weights[layer].shape[0]), feature))
-            dr_dWvec = Array(np.stack(dr_dWvec_i, axis=2))
+            # dr_dWvec_i = []
+            # for feature in np.vstack((s[layer], bias)).T:
+            #     dr_dWvec_i.append(np.kron(np.identity(self.network.weights[layer].shape[0]), feature))
+            # dr_dWvec = Array(np.stack(dr_dWvec_i, axis=2))
+
+            dr_dW = np.vstack((s[layer], bias))[None]
 
             # Chain rule for full derivative
             # Matrix operators have left-to-right associativity
-            dln_dWvec = dln_dq @ dq_dq @ dq_dr @ dr_dWvec
+            dln_dW = (dln_dq @ dq_dq @ dq_dr).T @ dr_dW
 
             # Unvectorize
-            dln_dW = np.reshape(dln_dWvec.T, [*self.network.weights[layer].shape, self.batch_size])
+            # dln_dW = np.reshape(dln_dWvec.T, [*self.network.weights[layer].shape, self.batch_size])
 
             self._cached_gradient.insert(0, np.average(dln_dW, axis=2))
 
@@ -333,3 +335,22 @@ class Nadam(Backpropagation):
                     (1 - self.decay_first_moment[l] ** self.iteration))
         self.network.weights[l] -= rate * nesterov / \
                                    (np.sqrt(np.diag(second_moment) + self.wedge)[..., None])
+
+
+class L_BFGS(Backpropagation):
+    def __init__(self, network, environment, **settings):
+        super().__init__(network, environment, **settings)
+
+        self.update = [Array(np.zeros(theta.shape)) for theta in network.weights]
+        self.grad_cache = [Array(np.zeros(theta.shape)) for theta in network.weights]
+
+        self.hessian_inv = [Array(np.eye(theta.shape[0])) for theta in network.weights]
+
+    def iterate(self, rate, l):
+        update_delta = self.update[l] - update
+        grad_delta = self.gradient[l] - self.grad_cache[l]
+
+        alpha = (update_delta.T @ self.gradient[l]) / (grad_delta.T @ update_delta)
+
+        self.update[l] = self.gradient[l] + self.decay[l] * self.update[l]
+        self.network.weights[l] -= rate * self.update[l]
