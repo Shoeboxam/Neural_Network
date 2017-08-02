@@ -54,11 +54,11 @@ class Logic_Gate:
         return np.linalg.norm(expect - predict)
 
 # environment = Logic_Gate(np.array([[-1], [1], [1], [-1]]))
-environment = Logic_Gate(np.array([[-1], [1], [1], [-1], [1], [-1], [-1], [-1]]))
+# environment = Logic_Gate(np.array([[-1], [1], [1], [-1], [1], [-1], [-1], [-1]]))
 # environment = Logic_Gate(np.array([[1], [-1], [-1], [1], [-1], [-1], [1], [-1]]))
 
 # Notice: The plot will only graph the first dimension of an n-dimensional input.
-# environment = Logic_Gate(np.array([[-1, -1], [1, -1], [1, -1], [-1, 1]]))
+environment = Logic_Gate(np.array([[-1, -1], [1, -1], [1, -1], [-1, 1]]))
 
 # ~~~ Create the network ~~~
 network_params = {
@@ -67,9 +67,10 @@ network_params = {
 
     # Basis function(s) from Optimizer.py
     "basis": basis_bent,
+    "basis_final": basis_logistic,
 
     # Weight initialization distribution
-    "distribute": dist_uniform
+    "distribute": dist_normal
     }
 
 network = Network(**network_params)
@@ -80,7 +81,7 @@ optimizer_params = {
     "batch_size": 8,
 
     # Learning rate
-    "learn_step": .0,
+    "learn_step": .02,
     "anneal": anneal_fixed,
 
     # Weight decay regularization function
@@ -97,7 +98,7 @@ optimizer_params = {
     "graph": True
     }
 
-Adadelta(network, environment, **optimizer_params).minimize()
+GradientDescent(network, environment, **optimizer_params).minimize()
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()

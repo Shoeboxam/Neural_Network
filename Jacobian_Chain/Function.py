@@ -27,7 +27,7 @@ bank = 50            # Inverse learning function steepness
 # BASIS FUNCTIONS: Regression
 basis_identity  = Function('basis', 'identity',
                            [lambda x: x,
-                            lambda x: np.diag(np.ones(np.shape(x)))])
+                            lambda x: diag(np.ones(x.shape))])
 basis_binary    = Function('basis', 'binary',
                            [lambda x: piecewise(x, 0, 1),
                             lambda x: diag(np.zeros(np.shape(x)))])
@@ -44,7 +44,7 @@ basis_logistic  = Function('basis', 'logistic',
 basis_softplus  = Function('basis', 'softplus',
                            [lambda x: np.log(1 + np.exp(x)),
                             lambda x: diag((1 + np.exp(-x))**-1)])
-basis_gaussian  = Function('basis', 'gaussian',
+basis_gaussian  = Function('basis', 'gaussian',  # Radial basis function
                            [lambda x: np.exp(-x**2),
                             lambda x: diag(-2 * x * np.exp(-x**2))])
 
@@ -67,6 +67,10 @@ basis_softsign  = Function('basis', 'softsign',
 basis_bent      = Function('basis', 'bent',
                            [lambda x: (np.sqrt(x**2 + 1) - 1) / 2 + x,
                             lambda x: diag(x / (2*np.sqrt(x**2 + 1)) + 1)])
+
+basis_log       = Function('basis', 'log',
+                           [lambda x: piecewise(x, np.log(1 + x), -np.log(1 - x)),
+                            lambda x: diag(piecewise(x, 1 / (1 + x), 1 / (1 - x)))])
 
 
 # BASIS FUNCTIONS: Classification

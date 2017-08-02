@@ -13,6 +13,7 @@ class Optimize(object):
             "epsilon": None,           # error allowance
             "iteration_limit": 10000,  # limit on number of iterations to run
 
+            "debug_frequency": 50,
             "debug": False,
             "graph": False
         }, **kwargs}

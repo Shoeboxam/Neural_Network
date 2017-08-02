@@ -28,6 +28,7 @@ class Backpropagation(Optimize):
             "regularizer": reg_L2,
 
             # Percent of weights to drop each training iteration
+            "dropout_step": 0.0,
             "dropout": 0.0,
         }, **kwargs}
 
@@ -59,7 +60,7 @@ class Backpropagation(Optimize):
             if self.iteration_limit is not None and self.iteration >= self.iteration_limit:
                 break
 
-            if (self.graph or self.epsilon or self.debug) and self.iteration % 50 == 0:
+            if (self.graph or self.epsilon or self.debug) and self.iteration % self.debug_frequency == 0:
                 [inputs, expectation] = map(Array, self.environment.survey())
                 prediction = self.network.predict(inputs)
                 error = self.environment.error(expectation, prediction)
@@ -222,7 +223,7 @@ class Adadelta(Backpropagation):
                               (1 - self.decay[l]) * self.gradient[l] @ self.gradient[l].T
 
         rate = (np.diag(self.update_square[l]) + self.wedge)[..., None]
-        self.update[l] = -rate / np.sqrt(np.diag(self.grad_square[l]) + self.wedge)[..., None] * self.gradient[l]
+        self.update[l] = -(rate / np.sqrt(np.diag(self.grad_square[l]) + self.wedge)[..., None]) * self.gradient[l]
 
         # Prepare for next iteration
         self.update_square[l] = self.decay[l] * self.update_square[l] + \
