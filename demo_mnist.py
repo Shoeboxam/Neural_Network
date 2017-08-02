@@ -73,7 +73,7 @@ class MNIST:
         x = np.random.randint(np.size(self.train_images[0]), size=quantity)
         return [self.train_images[x].T, self.train_labels[x].T]
 
-    def survey(self, quantity=50):
+    def survey(self, quantity=200):
         if quantity is None:
             return self.test_images.T, self.test_labels.T
         else:
@@ -94,7 +94,7 @@ class MNIST:
     def error(expect, predict):
         predict_id = np.argmax(predict, axis=0)
         expect_id = np.argmax(expect, axis=0)
-        return 1.0 - np.mean((predict_id == expect_id).astype(float))
+        return int((1.0 - np.mean((predict_id == expect_id).astype(float))) * 100)
 
 
 environment = MNIST()
@@ -102,7 +102,7 @@ environment = MNIST()
 # ~~~ Create the network ~~~
 network_params = {
     # Shape of network
-    "units": [environment.size_input(), 20, 100, 50, environment.size_output()],
+    "units": [environment.size_input(), 100, 100, 50, environment.size_output()],
 
     # Basis function(s) from Optimizer.py
     "basis": basis_bent,
@@ -117,13 +117,13 @@ network = Network(**network_params)
 # ~~~ Train the network ~~~
 optimizer_params = {
     # Source of stimuli
-    "batch_size": 10,
+    "batch_size": 1,
 
-    "cost": cost_sum_squared,
+    "cost": cost_cross_entropy,
 
     # Learning rate
-    "learn_step": .1,
-    "anneal": anneal_fixed,
+    "learn_step": 1,
+    "anneal": anneal_invroot,
 
     # Weight decay regularization function
     "regularize_step": 0.0,
@@ -132,16 +132,17 @@ optimizer_params = {
     # Percent of weights to drop each training iteration
     "dropout": 0.0,
 
-    "epsilon": 0.04,           # error allowance
-    "iteration_limit": 10000,  # limit on number of iterations to run
+    "epsilon": 0.0,           # error allowance
+    "iteration_limit": None,  # limit on number of iterations to run
 
+    "debug_frequency": 1000,
     "debug": True,
 
     # The error measurement used in the mnist graph is highly susceptible to sampling error
-    "graph": True
+    "graph": False
     }
 
-Nadam(network, environment, **optimizer_params).minimize()
+Adagrad(network, environment, **optimizer_params).minimize()
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()

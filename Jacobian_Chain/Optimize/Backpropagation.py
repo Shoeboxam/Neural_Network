@@ -8,9 +8,6 @@ from ..Function import *
 class Backpropagation(Optimize):
     def __init__(self, network, environment, **kwargs):
 
-        self.network = network
-        self.environment = environment
-
         # Default parameters
         settings = {**{
             "cost": cost_sum_squared,
@@ -55,24 +52,13 @@ class Backpropagation(Optimize):
             # Apply weight regularization
             for reg_step, weight in zip(self.regularize_step, self.network.weights):
                 if reg_step:
-                    weight += reg_step * self.regularizer(weight, d=1)
+                    weight -= reg_step * self.regularizer(weight, d=1)
 
             if self.iteration_limit is not None and self.iteration >= self.iteration_limit:
-                break
+                return true
 
             if (self.graph or self.epsilon or self.debug) and self.iteration % self.debug_frequency == 0:
-                [inputs, expectation] = map(Array, self.environment.survey())
-                prediction = self.network.predict(inputs)
-                error = self.environment.error(expectation, prediction)
-
-                if error < self.epsilon:
-                    converged = True
-
-                if self.debug:
-                    self.post_debug(error=error, prediction=prediction)
-
-                if self.graph:
-                    self.post_graph(error, prediction)
+                converged = self.convergence_check()
 
         return converged
 
@@ -209,7 +195,7 @@ class Adagrad(Backpropagation):
 class Adadelta(Backpropagation):
     def __init__(self, network, environment, **settings):
 
-        settings = {**{'decay': 0.9, 'wedge': 0.1e8}, **settings}
+        settings = {**{'decay': 0.9, 'wedge': 0.1e4}, **settings}
         super().__init__(network, environment, **settings)
 
         self.decay = self._broadcast(self.decay)
@@ -224,13 +210,14 @@ class Adadelta(Backpropagation):
         self.grad_square[l] = self.decay[l] * self.grad_square[l] + \
                               (1 - self.decay[l]) * self.gradient[l] @ self.gradient[l].T
 
-        rate = (np.diag(self.update_square[l]) + self.wedge)[..., None]
+        rate = np.sqrt(np.diag(self.update_square[l]) + self.wedge)[..., None]
         self.update[l] = -(rate / np.sqrt(np.diag(self.grad_square[l]) + self.wedge)[..., None]) * self.gradient[l]
+        print((rate / np.sqrt(np.diag(self.grad_square[l]) + self.wedge)[..., None]).shape)
+        self.network.weights[l] -= self.update[l]
 
         # Prepare for next iteration
         self.update_square[l] = self.decay[l] * self.update_square[l] + \
                                 (1 - self.decay[l]) * self.update[l] @ self.update[l].T
-        self.network.weights[l] += self.update[l]
 
 
 class RMSprop(Backpropagation):
@@ -337,6 +324,26 @@ class Nadam(Backpropagation):
                                    (np.sqrt(np.diag(second_moment) + self.wedge)[..., None])
 
 
+class Quickprop(Backpropagation):
+    def __init__(self, network, environment, **settings):
+
+        settings = {**{'maximum_growth_factor': 1.2}, **settings}
+        super().__init__(network, environment, **settings)
+
+        self.maximum_growth_factor = self._broadcast(self.maximum_growth_factor)
+
+        self.update = [Array(np.ones(theta.shape)) for theta in network.weights]
+        self.gradient_cache = [Array(np.zeros(theta.shape)) for theta in network.weights]
+
+    def iterate(self, rate, l):
+        # https://arxiv.org/pdf/1606.04333.pdf
+        limit = np.abs(self.update[l]) * self.maximum_growth_factor
+        self.update[l] = np.clip(self.gradient[l] / (self.gradient_cache[l] - self.gradient[l]), -limit, limit)
+
+        self.network.weights[l] -= rate * self.update[l]
+        self.gradient_cache[l] = self.gradient[l].copy()
+
+
 class L_BFGS(Backpropagation):
     def __init__(self, network, environment, **settings):
         super().__init__(network, environment, **settings)
@@ -347,6 +354,7 @@ class L_BFGS(Backpropagation):
         self.hessian_inv = [Array(np.eye(theta.shape[0])) for theta in network.weights]
 
     def iterate(self, rate, l):
+        """Not yet functional"""
         update_delta = self.update[l] - update
         grad_delta = self.gradient[l] - self.grad_cache[l]
 

@@ -26,6 +26,22 @@ class Optimize(object):
         if self.graph:
             self.plot_points = []
 
+    def convergence_check(self):
+        [inputs, expectation] = map(Array, self.environment.survey())
+        prediction = self.network.predict(inputs)
+        error = self.environment.error(expectation, prediction)
+
+        if error < self.epsilon:
+            return True
+
+        if self.debug:
+            self.post_debug(error=error, prediction=prediction)
+
+        if self.graph:
+            self.post_graph(error, prediction)
+
+        return False
+
     def post_debug(self, **kwargs):
         print("Iteration: " + str(self.iteration))
         print("Error: " + str(kwargs['error']))

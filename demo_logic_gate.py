@@ -77,12 +77,12 @@ network = Network(**network_params)
 
 # ~~~ Train the network ~~~
 optimizer_params = {
-    "cost": cost_cross_entropy,
+    "cost": cost_sum_squared,
     "batch_size": 8,
 
     # Learning rate
     "learn_step": .02,
-    "anneal": anneal_fixed,
+    "anneal": anneal_invroot,
 
     # Weight decay regularization function
     "regularize_step": 0.0,
@@ -92,13 +92,13 @@ optimizer_params = {
     "dropout_step": 0.0,
 
     "epsilon": 0.04,          # error allowance
-    "iteration_limit": 5000,  # limit on number of iterations to run
+    "iteration_limit": None,  # limit on number of iterations to run
 
     "debug": True,
     "graph": True
     }
 
-GradientDescent(network, environment, **optimizer_params).minimize()
+Quickprop(network, environment, **optimizer_params).minimize()
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()

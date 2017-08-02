@@ -38,9 +38,11 @@ basis_exponent  = Function('basis', 'exponent',
                            [lambda x: piecewise(x, alpha*(np.exp(x) - 1), x),
                             lambda x: diag(piecewise(x, alpha*np.exp(x), np.ones(np.shape(x))))])
 
+def sigmoid(x):
+    return tau * (1 + np.exp(-x/tau))**-1
 basis_logistic  = Function('basis', 'logistic',
-                           [lambda x: tau * (1 + np.exp(-x/tau))**-1,
-                            lambda x: diag(np.exp(x/tau)/(np.exp(x/tau) + 1)**2)])
+                           [sigmoid,
+                            lambda x: diag(sigmoid(x) * (1 - sigmoid(x)))])
 basis_softplus  = Function('basis', 'softplus',
                            [lambda x: np.log(1 + np.exp(x)),
                             lambda x: diag((1 + np.exp(-x))**-1)])
@@ -133,10 +135,10 @@ anneal_invroot = Function('learn', 'invroot',
 
 # DISTRIBUTION FUNCTIONS
 dist_uniform = Function('dist', 'uniform',
-                        [lambda x, y: np.random.uniform(low=-1, high=1, size=(x, y))])
+                        [lambda *args: np.random.uniform(low=-1, high=1, size=[*args])])
 
 dist_normal  = Function('dist', 'normal',
-                        [lambda x, y: np.random.normal(loc=0, scale=1, size=(x, y))])
+                        [lambda *args: np.random.normal(loc=0, scale=1, size=[*args])])
 
 
 def piecewise(x, lower, upper, thresh=0):
