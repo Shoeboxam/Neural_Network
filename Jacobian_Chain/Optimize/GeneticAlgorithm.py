@@ -7,9 +7,6 @@ from .Optimize import Optimize
 class GeneticAlgorithm(Optimize):
     def __init__(self, network, environment, **kwargs):
 
-        self.network = network
-        self.environment = environment
-
         # Default parameters
         settings = {**{
             'population_size': 100,

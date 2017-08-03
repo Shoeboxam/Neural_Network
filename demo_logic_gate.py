@@ -100,7 +100,7 @@ optimizer_params = {
     "graph": True
     }
 
-GradientDescent(network, environment, **optimizer_params).minimize()
+SimulatedAnnealing(network, environment, **optimizer_params).minimize()
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()
