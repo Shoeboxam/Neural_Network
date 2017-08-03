@@ -38,15 +38,13 @@ basis_exponent  = Function('basis', 'exponent',
                            [lambda x: piecewise(x, alpha*(np.exp(x) - 1), x),
                             lambda x: diag(piecewise(x, alpha*np.exp(x), np.ones(np.shape(x))))])
 
-def sigmoid(x):
-    return tau * (1 + np.exp(-x/tau))**-1
-basis_logistic  = Function('basis', 'logistic',
-                           [sigmoid,
-                            lambda x: diag(sigmoid(x) * (1 - sigmoid(x)))])
+basis_logistic  = Function('basis', 'logistic',  # Commonly known as 'Sigmoid'
+                           [lambda x: tau * (1 + np.exp(-x/tau))**-1,                       # S
+                            lambda x: diag(np.exp(x / tau) / (np.exp(x / tau) + 1) ** 2)])  # S * (1 - S)
 basis_softplus  = Function('basis', 'softplus',
                            [lambda x: np.log(1 + np.exp(x)),
                             lambda x: diag((1 + np.exp(-x))**-1)])
-basis_gaussian  = Function('basis', 'gaussian',  # Radial basis function
+basis_gaussian  = Function('basis', 'gaussian',
                            [lambda x: np.exp(-x**2),
                             lambda x: diag(-2 * x * np.exp(-x**2))])
 
@@ -139,6 +137,9 @@ dist_uniform = Function('dist', 'uniform',
 
 dist_normal  = Function('dist', 'normal',
                         [lambda *args: np.random.normal(loc=0, scale=1, size=[*args])])
+
+dist_binomial= Function('dist', 'binomial',
+                        [lambda *args: np.random.binomial()])
 
 
 def piecewise(x, lower, upper, thresh=0):

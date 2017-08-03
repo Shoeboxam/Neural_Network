@@ -18,15 +18,18 @@ class Backpropagation(Optimize):
             # step size
             "learn_step": 0.01,
             # modifies step size over time
-            "anneal": anneal_power,
+            "learn_anneal": anneal_fixed,
 
             # Weight regularizer (disabled by default)
             "regularize_step": 0.0,
             "regularizer": reg_L2,
 
+            "noise_size": 0.0,
+            "anneal_noise": anneal_invroot,
+
             # Percent of weights to drop each training iteration
             "dropout_step": 0.0,
-            "dropout": 0.0,
+            "dropconnect_step": 0.0,
         }, **kwargs}
 
         super().__init__(network, environment, **settings)
@@ -46,7 +49,7 @@ class Backpropagation(Optimize):
             self.iteration += 1
 
             # Update the weights
-            learn_rate = self.anneal(self.iteration, self.iteration_limit) * self.learn_step
+            learn_rate = self.learn_anneal(self.iteration, self.iteration_limit) * self.learn_step
             iterate(learn_rate, list(range(len(learn_rate))))
 
             # Apply weight regularization
@@ -92,20 +95,12 @@ class Backpropagation(Optimize):
             # Basis function derivative
             dq_dr = Array(self.network.basis[layer](r, d=1))
 
-            # Reinforcement function derivative
-            # dr_dWvec_i = []
-            # for feature in np.vstack((s[layer], bias)).T:
-            #     dr_dWvec_i.append(np.kron(np.identity(self.network.weights[layer].shape[0]), feature))
-            # dr_dWvec = Array(np.stack(dr_dWvec_i, axis=2))
-
+            # Final reinforcement derivative
             dr_dW = np.vstack((s[layer], bias))[None]
 
             # Chain rule for full derivative
             # Matrix operators have left-to-right associativity
             dln_dW = (dln_dq @ dq_dq @ dq_dr).T @ dr_dW
-
-            # Unvectorize
-            # dln_dW = np.reshape(dln_dWvec.T, [*self.network.weights[layer].shape, self.batch_size])
 
             self._cached_gradient.insert(0, np.average(dln_dW, axis=2))
 
@@ -113,6 +108,13 @@ class Backpropagation(Optimize):
             # Store derivative accumulation for next layer
             dr_dq = self.network.weights[layer][..., :-1]
             dq_dq = dq_dq @ dq_dr @ dr_dq
+
+        if self.noise_size:
+            # https://arxiv.org/pdf/1511.06807.pdf
+            for l in range(len(self._cached_gradient)):
+                # Schedule decay in variance
+                variance = self.noise_size / (1 + self.iteration)**.55
+                self._cached_gradient[l] += np.random.normal(0, variance, [*self.network.weights[l].shape])
 
         self._cached_iteration = self.iteration
         return self._cached_gradient
@@ -128,15 +130,24 @@ class Backpropagation(Optimize):
 
         for idx in range(len(self.network.weights)):
 
-            # Dropout
-            if self.dropout_step is not None:
+            # Dropout - https://www.cs.toronto.edu/~hinton/absps/JMLRdropout.pdf
+            if self.dropout_step:
                 # Drop nodes from network
-                data *= np.random.binomial(1, (1.0 - self.dropout_step), size=data.shape)
+                data[np.random.binomial(1, self.dropout_step, size=data.shape[0]).astype(bool)] = 0
                 # Resize remaining nodes to compensate for loss of nodes
-                data = data.astype(float) * (1.0 / (1 - self.dropout_step))
+                data = data.astype(float) / (1 - self.dropout_step)
 
-            #  r = basis          (W                 * s)
-            data = self.network.basis[idx](self.network.weights[idx] @ np.vstack((data, bias)))
+            # Dropconnect - https://cs.nyu.edu/~wanli/dropc/dropc.pdf
+            if self.dropconnect_step:
+                # Drop connections from the network
+                mask = np.random.binomial(1, (1.0 - self.dropconnect_step), size=self.network.weights[idx].shape).astype(float)
+                # Resize remaining nodes to compensate for loss of nodes
+                mask *= mask / (1.0 - self.dropconnect_step)
+                data = self.network.basis[idx](self.network.weights[idx] * mask @ np.vstack((data, bias)))
+
+            else:
+                #  r = basis                  (W                         * s)
+                data = self.network.basis[idx](self.network.weights[idx] @ np.vstack((data, bias)))
 
             self._cached_stimulus.append(data)
 
@@ -195,7 +206,7 @@ class Adagrad(Backpropagation):
 class Adadelta(Backpropagation):
     def __init__(self, network, environment, **settings):
 
-        settings = {**{'decay': 0.9, 'wedge': 0.1e4}, **settings}
+        settings = {**{'decay': 0.9, 'wedge': 0.1e8}, **settings}
         super().__init__(network, environment, **settings)
 
         self.decay = self._broadcast(self.decay)
@@ -204,7 +215,7 @@ class Adadelta(Backpropagation):
         self.update_square = [Array(np.zeros([theta.shape[0]] * 2)) for theta in network.weights]
 
     def iterate(self, rate, l):
-        """THIS METHOD IS NOT CONVERGING"""
+        """THIS METHOD IS DIVERGING"""
         # EQN 14: https://arxiv.org/pdf/1212.5701.pdf
         # Rate is derived
         self.grad_square[l] = self.decay[l] * self.grad_square[l] + \
@@ -337,7 +348,7 @@ class Quickprop(Backpropagation):
 
     def iterate(self, rate, l):
         # https://arxiv.org/pdf/1606.04333.pdf
-        limit = np.abs(self.update[l]) * self.maximum_growth_factor
+        limit = np.abs(self.update[l]) * self.maximum_growth_factor[l]
         self.update[l] = np.clip(self.gradient[l] / (self.gradient_cache[l] - self.gradient[l]), -limit, limit)
 
         self.network.weights[l] -= rate * self.update[l]
@@ -354,7 +365,7 @@ class L_BFGS(Backpropagation):
         self.hessian_inv = [Array(np.eye(theta.shape[0])) for theta in network.weights]
 
     def iterate(self, rate, l):
-        """Not yet functional"""
+        """THIS METHOD IS NOT FULLY IMPLEMENTED"""
         update_delta = self.update[l] - update
         grad_delta = self.gradient[l] - self.grad_cache[l]
 

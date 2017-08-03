@@ -89,7 +89,9 @@ optimizer_params = {
     "regularizer": reg_L2,
 
     # Percent of weights to drop each training iteration
-    "dropout_step": 0.0,
+    # "dropout_step": 0.05,
+    # "dropconnect_step": 0.05,
+    "noise_size": 1.,
 
     "epsilon": 0.04,          # error allowance
     "iteration_limit": None,  # limit on number of iterations to run
@@ -98,7 +100,7 @@ optimizer_params = {
     "graph": True
     }
 
-Quickprop(network, environment, **optimizer_params).minimize()
+GradientDescent(network, environment, **optimizer_params).minimize()
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()
