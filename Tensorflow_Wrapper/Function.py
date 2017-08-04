@@ -68,11 +68,10 @@ cost_softmax_CE     = Function('cost', 'SMCEE',
 
 
 # REGULARIZATION DECAY FUNCTIONS # Returns a scalar tensor
-decay_L1   = Function('decay', 'L1', lambda x: tf.contrib.layers.apply_regularization(tf.contrib.layers.l1_regularizer(1), x))
-decay_L2   = Function('decay', 'L2', tf.nn.l2_loss)
+reg_L1   = Function('decay', 'L1', lambda x: tf.contrib.layers.apply_regularization(tf.contrib.layers.l1_regularizer(1), x))
+reg_L2   = Function('decay', 'L2', tf.nn.l2_loss)
 
-decay_L12  = Function('decay', 'L12', lambda x: tf.contrib.layers.apply_regularization(tf.contrib.layers.l1_regularizer(1), x) + tf.nn.l2_loss(x))
-decay_NONE = Function('decay', 'NONE', lambda x: tf.zeros(shape=[]))
+reg_L12  = Function('decay', 'L12', lambda x: tf.contrib.layers.apply_regularization(tf.contrib.layers.l1_regularizer(1), x) + tf.nn.l2_loss(x))
 
 
 # ANNEALING FUNCTIONS (learning rate)

@@ -206,7 +206,7 @@ class Adagrad(Backpropagation):
 class Adadelta(Backpropagation):
     def __init__(self, network, environment, **settings):
 
-        settings = {**{'decay': 0.9, 'wedge': 0.1e8}, **settings}
+        settings = {**{'decay': 0.9, 'wedge': 1e-8}, **settings}
         super().__init__(network, environment, **settings)
 
         self.decay = self._broadcast(self.decay)
@@ -215,7 +215,6 @@ class Adadelta(Backpropagation):
         self.update_square = [Array(np.zeros([theta.shape[0]] * 2)) for theta in network.weights]
 
     def iterate(self, rate, l):
-        """THIS METHOD IS DIVERGING"""
         # EQN 14: https://arxiv.org/pdf/1212.5701.pdf
         # Rate is derived
         self.grad_square[l] = self.decay[l] * self.grad_square[l] + \
@@ -233,7 +232,7 @@ class Adadelta(Backpropagation):
 
 class RMSprop(Backpropagation):
     def __init__(self, network, environment, **settings):
-        settings = {**{'decay': 0.9, 'wedge': 0.1e8}, **settings}
+        settings = {**{'decay': 0.9, 'wedge': 1e-8}, **settings}
         super().__init__(network, environment, **settings)
 
         self.decay = self._broadcast(self.decay)
@@ -254,7 +253,7 @@ class Adam(Backpropagation):
         settings = {**{
             'decay_first_moment': 0.9,
             'decay_second_moment': 0.999,
-            'wedge': 0.1e8
+            'wedge': 1e-8
         }, **settings}
         super().__init__(network, environment, **settings)
 
@@ -309,7 +308,7 @@ class Nadam(Backpropagation):
         settings = {**{
             'decay_first_moment': 0.9,
             'decay_second_moment': 0.999,
-            'wedge': 0.1e8
+            'wedge': 1e-8
         }, **settings}
         super().__init__(network, environment, **settings)
 

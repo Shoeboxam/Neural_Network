@@ -1,10 +1,10 @@
 # Learn a logic gate
 
 # Use custom implementation:
-from Jacobian_Chain import *
+# from Jacobian_Chain import *
 
 # Use Tensorflow wrapper:
-# from Tensorflow_Wrapper import *
+from Tensorflow_Wrapper import *
 
 import itertools
 import math
@@ -12,7 +12,7 @@ import numpy as np
 np.set_printoptions(suppress=True, linewidth=10000)
 
 
-class Logic_Gate:
+class LogicGate:
 
     def __init__(self, expectation):
         bit_length = math.log(np.shape(expectation)[0], 2)
@@ -53,12 +53,12 @@ class Logic_Gate:
     def error(expect, predict):
         return np.linalg.norm(expect - predict)
 
-# environment = Logic_Gate(np.array([[-1], [1], [1], [-1]]))
-# environment = Logic_Gate(np.array([[-1], [1], [1], [-1], [1], [-1], [-1], [-1]]))
-# environment = Logic_Gate(np.array([[1], [-1], [-1], [1], [-1], [-1], [1], [-1]]))
+# environment = LogicGate(np.array([[-1], [1], [1], [-1]]))
+# environment = LogicGate(np.array([[-1], [1], [1], [-1], [1], [-1], [-1], [-1]]))
+# environment = LogicGate(np.array([[1], [-1], [-1], [1], [-1], [-1], [1], [-1]]))
 
 # Notice: The plot will only graph the first dimension of an n-dimensional input.
-environment = Logic_Gate(np.array([[-1, -1], [1, -1], [1, -1], [-1, 1]]))
+environment = LogicGate(np.array([[-1, -1], [1, -1], [1, -1], [-1, 1]]))
 
 # ~~~ Create the network ~~~
 network_params = {
@@ -100,7 +100,7 @@ optimizer_params = {
     "graph": True
     }
 
-SimulatedAnnealing(network, environment, **optimizer_params).minimize()
+GradientDescent(network, environment, **optimizer_params).minimize()
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()
