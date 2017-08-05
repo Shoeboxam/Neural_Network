@@ -111,11 +111,12 @@ optimizer_params = {
     "anneal": anneal_inverse,
 
     # Weight decay regularization function
-    "regularize_step": 0.0,
-    "regularizer": reg_L2,
+    "regularize_step": 0.04,
+    "regularizer": reg_L12,
 
     # Percent of weights to drop each training iteration
-    "dropout": 0,
+    # "dropout_step": 0.05,
+    "dropconnect_step": 0.05,
 
     "epsilon": .04,           # error allowance
     "iteration_limit": 500000,  # limit on number of iterations to run

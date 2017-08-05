@@ -24,7 +24,9 @@ class Network(object):
             # Construct placeholders for the input and expected output variables
             self.stimulus = tf.placeholder(tf.float32, [units[0], None], name='stimulus')
             self.expected = tf.placeholder(tf.float32, [units[-1], None], name='expected')
+
             self.dropout = tf.placeholder(tf.float32, name='dropout')
+            self.dropconnect = tf.placeholder(tf.float32, name='dropconnect')
 
             # Start the hierarchy
             self.hierarchy = self.stimulus
@@ -39,8 +41,11 @@ class Network(object):
                 self.graph.add_to_collection('biases', bias)
 
                 self.hierarchy = basis[idx](weight @ self.hierarchy + bias[..., None])
+
+                # The training hierarchy includes calls for dropout and dropconnect
+                weight_dropconnect = tf.nn.dropout(weight, self.dropconnect)
                 self.hierarchy_train = tf.nn.dropout(
-                    basis[idx](weight @ self.hierarchy_train + bias[..., None]), self.dropout)
+                    basis[idx](weight_dropconnect @ self.hierarchy_train + bias[..., None]), self.dropout)
 
             self.session = tf.Session(graph=self.graph)
 

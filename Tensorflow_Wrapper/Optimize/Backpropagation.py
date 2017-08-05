@@ -53,13 +53,10 @@ class Backpropagation(Optimize):
 
             # Primary gradient loss
             tf.add_to_collection('losses', self.cost(self.network.expected, self.network.hierarchy_train))
-            cost_op = self.cost(self.network.expected, self.network.hierarchy_train)
 
             # Weight decay losses
-            # for idx, layer in enumerate(tf.get_collection('weights')):
-            #     regular_shape = [int(self.network.expected.shape[0]), self.batch_size]
-            #     regular = tf.tile(self.regularizer(layer)[..., None, None], regular_shape)
-            #     tf.add_to_collection('losses', self.regularize_step * regular)
+            for idx, layer in enumerate(tf.get_collection('weights')):
+                tf.add_to_collection('losses', (self.regularize_step * self.regularizer(layer)))
 
             # Combine weight decay and gradient losses
             loss = tf.add_n(tf.get_collection('losses'), name='loss')
@@ -78,7 +75,9 @@ class Backpropagation(Optimize):
                 parameters = {
                     self.network.stimulus: stimulus,
                     self.network.expected: expected,
-                    self.network.dropout: 1 - self.dropout_step
+
+                    self.network.dropout: 1 - self.dropout_step,
+                    self.network.dropconnect: 1 - self.dropconnect_step
                 }
 
                 self.network.session.run(train_step, feed_dict=parameters)
