@@ -65,9 +65,11 @@ class Optimize(object):
         plt.cla()
         plt.title('Error')
         plt.plot(*zip(*self.plot_points), marker='.', color=(.9148, .604, .0945))
-        plt.pause(0.00001)
 
         # Environment plot
+        plt.subplot(1, 2, 2)
+        plt.cla()
+        plt.title('Environment')
         self.environment.plot(plt, prediction)
 
         plt.pause(0.00001)
