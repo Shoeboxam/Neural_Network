@@ -105,30 +105,30 @@ cost_softmax_CEE    = Function('cost', 'SMCEE',
 
 # REGULARIZATION FUNCTIONS (weight decay)
 reg_L1   = Function('decay', 'L1',
-                      [lambda x: np.linalg.norm(x), lambda x: piecewise(x, -1, 1)])
+                     [lambda x: np.linalg.norm(x), lambda x: piecewise(x, -1, 1)])
 
 reg_L2   = Function('decay', 'L2',
-                      [lambda x: x.T @ x, lambda x: 2*x])
+                     [lambda x: x.T @ x, lambda x: 2*x])
 
 reg_L12  = Function('decay', 'L12',
-                      [lambda x: decay_L1(x) + decay_L2(x), lambda x: decay_L1(x, d=1) + decay_L2(x, d=1)])
+                     [lambda x: decay_L1(x) + decay_L2(x), lambda x: decay_L1(x, d=1) + decay_L2(x, d=1)])
 
 
 # ANNEALING FUNCTIONS (learning rate)
 anneal_fixed   = Function('learn', 'fixed',
-                         [lambda t, i: 1])
+                         [lambda t, d, lim: 1])
 
 anneal_linear  = Function('learn', 'linear',
-                         [lambda t, i: 1 - t/i])
+                         [lambda t, d, lim: 1 - t/lim])
 
 anneal_inverse = Function('learn', 'inverse',
-                         [lambda t, i: bank / (bank + t)])
+                         [lambda t, d, lim: 1 / (d * t)])
 
 anneal_power   = Function('learn', 'power',
-                         [lambda t, i: np.exp(t/i)])
+                         [lambda t, d, lim: d**t])
 
-anneal_invroot = Function('learn', 'invroot',
-                         [lambda t, i: 1 / np.sqrt(t)])
+anneal_exp     = Function('learn', 'exp',
+                          [lambda t, d, lim: np.exp(-t / l)])
 
 
 # DISTRIBUTION FUNCTIONS

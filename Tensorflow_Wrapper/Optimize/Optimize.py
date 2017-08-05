@@ -22,36 +22,39 @@ class Optimize(object):
         for key, value in preferences.items():
             setattr(self, key, value)
 
-        self.iteration = 0
-
         if self.graph:
             self.plot_points = []
 
-    def convergence_check(self):
-        [inputs, expectation] = self.environment.survey()
-        prediction = self.network.predict(inputs)
+    def convergence_check(self, **kwargs):
+        [stimuli, expectation] = self.environment.survey()
+        prediction = self.network.predict(stimuli)
         error = self.environment.error(expectation, prediction)
 
         if error < self.epsilon:
             return True
 
+        kwargs = {**{'error': error,
+                     'prediction': prediction
+                     }, **kwargs}
+
         if self.debug:
-            self.post_debug(error=error, prediction=prediction)
+            self.post_debug(**kwargs)
 
         if self.graph:
-            self.post_graph(error, prediction)
+            self.post_graph(**kwargs)
 
         return False
 
     def post_debug(self, **kwargs):
-        print("Iteration: " + str(self.iteration))
+        print("Iteration: " + str(kwargs['iteration']))
         print("Error: " + str(kwargs['error']))
 
         # print(kwargs['prediction'])
         # print(kwargs['expectation'])
+        pass
 
-    def post_graph(self, error, prediction):
-        self.plot_points.append((self.iteration, error))
+    def post_graph(self, **kwargs):
+        self.plot_points.append((kwargs['iteration'], kwargs['error']))
 
         # Error plot
         plt.subplot(1, 2, 1)
@@ -64,7 +67,7 @@ class Optimize(object):
         plt.subplot(1, 2, 2)
         plt.cla()
         plt.title('Environment')
-        self.environment.plot(plt, self.plot_points, prediction)
+        self.environment.plot(plt, kwargs['prediction'])
 
         plt.pause(0.00001)
 

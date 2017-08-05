@@ -2,10 +2,10 @@
 from inspect import signature
 
 # Use custom implementation:
-from Jacobian_Chain import *
+# from Jacobian_Chain import *
 
 # Use Tensorflow wrapper:
-# from Tensorflow_Wrapper import *
+from Tensorflow_Wrapper import *
 
 import numpy as np
 np.set_printoptions(suppress=True, linewidth=10000)
@@ -62,7 +62,7 @@ class Continuous:
     def size_output(self):
         return self._size_output
 
-    def plot(self, plt, points, predict):
+    def plot(self, plt, predict):
         x, y = self.survey()
 
         if x.shape[0] == 1 and y.shape[0] == 1:
@@ -108,7 +108,7 @@ optimizer_params = {
 
     # Learning rate
     "learn_step": .1,
-    "anneal": anneal_invroot,
+    "anneal": anneal_inverse,
 
     # Weight decay regularization function
     "regularize_step": 0.0,

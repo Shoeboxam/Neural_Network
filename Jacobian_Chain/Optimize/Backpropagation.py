@@ -19,13 +19,14 @@ class Backpropagation(Optimize):
             "learn_step": 0.01,
             # modifies step size over time
             "learn_anneal": anneal_fixed,
+            "learn_decay": 1.0,
 
             # Weight regularizer (disabled by default)
             "regularize_step": 0.0,
             "regularizer": reg_L2,
 
             "noise_size": 0.0,
-            "anneal_noise": anneal_invroot,
+            "anneal_noise": anneal_inverse,
 
             # Percent of weights to drop each training iteration
             "dropout_step": 0.0,
@@ -35,6 +36,7 @@ class Backpropagation(Optimize):
         super().__init__(network, environment, **settings)
 
         self.learn_step = self._broadcast(self.learn_step)
+        self.learn_decay = self._broadcast(self.learn_decay)
         self.regularize_step = self._broadcast(self.regularize_step)
 
         self._cached_iteration = -1
@@ -43,13 +45,14 @@ class Backpropagation(Optimize):
 
     def minimize(self):
         iterate = np.vectorize(self.iterate)
+        learn_anneal = np.vectorize(self.learn_anneal)
 
         converged = False
         while not converged:
             self.iteration += 1
 
             # Update the weights
-            learn_rate = self.learn_anneal(self.iteration, self.iteration_limit) * self.learn_step
+            learn_rate = learn_anneal(self.iteration, self.learn_decay, self.iteration_limit) * self.learn_step
             iterate(learn_rate, list(range(len(learn_rate))))
 
             # Apply weight regularization

@@ -1,8 +1,8 @@
 # Use custom implementation:
-from Jacobian_Chain import *
+# from Jacobian_Chain import *
 
 # Use Tensorflow_Wrapper wrapper:
-# from Tensorflow_Wrapper import *
+from Tensorflow_Wrapper import *
 
 import urllib.request
 from io import BytesIO
@@ -86,7 +86,7 @@ class MNIST:
     def size_output(self):
         return np.size(self.train_labels[0])
 
-    def plot(self, plt, points, predict):
+    def plot(self, plt, predict):
         # Do not attempt to plot an image
         pass
 
@@ -102,14 +102,14 @@ environment = MNIST()
 # ~~~ Create the network ~~~
 network_params = {
     # Shape of network
-    "units": [environment.size_input(), 100, 100, 50, environment.size_output()],
+    "units": [environment.size_input(), 50, environment.size_output()],
 
     # Basis function(s) from Optimizer.py
-    "basis": basis_bent,
+    "basis": basis_logistic,
     "basis_final": basis_softmax,
 
     # Distribution to use for weight initialization
-    "distribute": dist_uniform
+    "distribute": dist_normal
     }
 
 network = Network(**network_params)
@@ -122,8 +122,8 @@ optimizer_params = {
     "cost": cost_cross_entropy,
 
     # Learning rate
-    "learn_step": 1,
-    "anneal": anneal_invroot,
+    "learn_step": 0.5,
+    "anneal": anneal_fixed,
 
     # Weight decay regularization function
     "regularize_step": 0.0,
@@ -142,7 +142,7 @@ optimizer_params = {
     "graph": False
     }
 
-Adagrad(network, environment, **optimizer_params).minimize()
+GradientDescent(network, environment, **optimizer_params).minimize()
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()

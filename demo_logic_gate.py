@@ -36,7 +36,7 @@ class LogicGate:
     def size_output(self):
         return np.shape(self._expectation)[1]
 
-    def plot(self, plt, points, predict):
+    def plot(self, plt, predict):
         data = np.zeros((2**self.size_input(), 2))
         predict = np.clip(predict[0], -1, 1)
 
@@ -54,11 +54,11 @@ class LogicGate:
         return np.linalg.norm(expect - predict)
 
 # environment = LogicGate(np.array([[-1], [1], [1], [-1]]))
-# environment = LogicGate(np.array([[-1], [1], [1], [-1], [1], [-1], [-1], [-1]]))
+environment = LogicGate(np.array([[-1], [1], [1], [-1], [1], [-1], [-1], [-1]]))
 # environment = LogicGate(np.array([[1], [-1], [-1], [1], [-1], [-1], [1], [-1]]))
 
 # Notice: The plot will only graph the first dimension of an n-dimensional input.
-environment = LogicGate(np.array([[-1, -1], [1, -1], [1, -1], [-1, 1]]))
+# environment = LogicGate(np.array([[-1, -1], [1, -1], [1, -1], [-1, 1]]))
 
 # ~~~ Create the network ~~~
 network_params = {
@@ -70,7 +70,7 @@ network_params = {
     "basis_final": basis_logistic,
 
     # Weight initialization distribution
-    "distribute": dist_normal
+    "distribute": dist_uniform
     }
 
 network = Network(**network_params)
@@ -78,11 +78,11 @@ network = Network(**network_params)
 # ~~~ Train the network ~~~
 optimizer_params = {
     "cost": cost_sum_squared,
-    "batch_size": 8,
+    "batch_size": 5,
 
     # Learning rate
-    "learn_step": .02,
-    "anneal": anneal_invroot,
+    "learn_step": .001,
+    "anneal": anneal_fixed,
 
     # Weight decay regularization function
     "regularize_step": 0.0,

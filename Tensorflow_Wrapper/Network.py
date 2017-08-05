@@ -43,9 +43,8 @@ class Network(object):
                     basis[idx](weight @ self.hierarchy_train + bias[..., None]), self.dropout)
 
             self.session = tf.Session(graph=self.graph)
-            self.session.as_default()
 
     def predict(self, stimulus):
         """Stimulus evaluation"""
-        return self.session.run(self.hierarchy, feed_dict={self.stimulus: stimulus})
-
+        with self.graph.as_default():
+            return self.session.run(self.hierarchy, feed_dict={self.stimulus: stimulus})

@@ -70,7 +70,7 @@ class Optimize(object):
         plt.subplot(1, 2, 2)
         plt.cla()
         plt.title('Environment')
-        self.environment.plot(plt, self.plot_points, prediction)
+        self.environment.plot(plt, prediction)
 
         plt.pause(0.00001)
 

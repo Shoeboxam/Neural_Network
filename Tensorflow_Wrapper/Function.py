@@ -58,7 +58,7 @@ basis_softmax   = Function('basis', 'SMax', tf.nn.softmax)
 
 
 # COST FUNCTIONS
-cost_sum_squared    = Function('cost', 'SSE', tf.squared_difference)
+cost_sum_squared    = Function('cost', 'SSE', tf.losses.mean_squared_error)
 
 cost_cross_entropy  = Function('cost', 'CEE',
                                lambda O, P: tf.reduce_mean(-tf.reduce_sum(O * tf.log(P + .01), reduction_indices=[1])))
@@ -75,15 +75,21 @@ reg_L12  = Function('decay', 'L12', lambda x: tf.contrib.layers.apply_regulariza
 
 
 # ANNEALING FUNCTIONS (learning rate)
-anneal_fixed   = Function('learn', 'fixed', lambda t, i: 1)
+anneal_fixed    = Function('learn', 'fixed', lambda r, t, d, lim: r)
 
-anneal_linear  = Function('learn', 'linear', lambda t, i: 1 - t/i)
+anneal_linear   = Function('learn', 'linear', lambda r, t, d, lim: 1 - t / lim)
 
-anneal_inverse = Function('learn', 'inverse', lambda t, i: bank / (bank + t))
+anneal_inverse  = Function('learn', 'inverse',
+                           lambda r, t, d, lim: tf.train.inverse_time_decay(r, t, 1, d, staircase=False))
 
-anneal_power   = Function('learn', 'power', lambda t, i: tf.exp(t/i))
+anneal_power    = Function('learn', 'power',
+                           lambda r, t, d, lim: tf.train.exponential_decay(r, t, 1, d, staircase=False))
 
-anneal_invroot = Function('learn', 'invroot', lambda t, i: 1 / tf.sqrt(t))
+anneal_exponent = Function('learn', 'exp',
+                           lambda r, t, d, lim: tf.train.natural_exp_decay(r, t, 1, d, staircase=False))
+
+anneal_poly     = Function('learn', 'poly',
+                           lambda r, t, d, lim: tf.train.polynomial_decay(r, t, 1, 1e-8, d))
 
 
 # DISTRIBUTION FUNCTIONS
