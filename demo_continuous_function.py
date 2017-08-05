@@ -7,6 +7,8 @@ from inspect import signature
 # Use Tensorflow wrapper:
 from Tensorflow_Wrapper import *
 
+
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 np.set_printoptions(suppress=True, linewidth=10000)
 
@@ -30,11 +32,15 @@ class Continuous:
         else:
             self._range = range
 
+        self.viewpoint = np.random.randint(0, 360)
+
     def sample(self, quantity=1):
         # Generate random values for each input stimulus
-        stimulus = []
+        axes = []
         for idx in range(self._size_input):
-            stimulus.append(np.random.uniform(low=self._domain[idx][0], high=self._domain[idx][1], size=quantity))
+            axes.append(np.random.uniform(low=self._domain[idx][0], high=self._domain[idx][1], size=quantity))
+
+        stimulus = np.array(np.meshgrid(*axes)).reshape(self._size_input, -1)
 
         # Evaluate each function with the stimuli
         expectation = []
@@ -43,12 +49,13 @@ class Continuous:
 
         return [np.array(stimulus), np.array(expectation)]
 
-    def survey(self, quantity=100):
+    def survey(self, quantity=50):
         # Generate random values for each input stimulus
-        stimulus = []
+        axes = []
         for idx in range(self._size_input):
-            stimulus.append(np.linspace(start=self._domain[idx][0], stop=self._domain[idx][1], num=quantity))
+            axes.append(np.linspace(start=self._domain[idx][0], stop=self._domain[idx][1], num=quantity))
 
+        stimulus = np.array(np.meshgrid(*axes)).reshape(self._size_input, -1)
         # Evaluate each function with the stimuli
         expectation = []
         for idx, f in enumerate(self._funct):
@@ -64,11 +71,22 @@ class Continuous:
 
     def plot(self, plt, predict):
         x, y = self.survey()
+        plt.title('Environment')
+
+        if y.shape[0] > 1:
+            ax = plt.subplot(1, 2, 2, projection='3d')
+            ax.scatter(x[0], y[0], y[1], color=(0.3559, 0.7196, 0.8637))
+            ax.scatter(x[0], predict[0], predict[1], color=(.9148, .604, .0945))
+            ax.view_init(elev=10., azim=self.viewpoint)
+            self.viewpoint += 5
 
         if x.shape[0] == 1 and y.shape[0] == 1:
+            plt.cla()
+            ax = plt.subplot(1, 2, 2)
             plt.ylim(self._range[0])
-            plt.plot(x[0], y[0], marker='.', color=(0.3559, 0.7196, 0.8637))
-            plt.plot(x[0], predict[0], marker='.', color=(.9148, .604, .0945))
+
+            ax.plot(x[0], y[0], marker='.', color=(0.3559, 0.7196, 0.8637))
+            ax.plot(x[0], predict[0], marker='.', color=(.9148, .604, .0945))
 
     @staticmethod
     def error(expect, predict):
@@ -79,10 +97,13 @@ class Continuous:
 #                           lambda a, b: (-5 * a**3 + 2 * b**2 + b),
 #                           lambda a, b: (12 * a**2 + 8 * b**3 + b)], domain=[[-1, 1]] * 2)
 
-# environment = Continuous([lambda a, b: (24 * a**4 - 2 * b**2 + a),
-#                           lambda a, b: (-5 * a**3 + 2 * b**2 + b)], domain=[[-1, 1]] * 2, range=[[-1, 1]] * 2)
+# environment = Continuous([lambda a, b: (24 * a - 2 * b**2 + a),
+#                           lambda a, b: (-5 * a**3 + 2 * b**2 + b)], domain=[[-1, 1]] * 2)
 
-environment = Continuous([lambda v: (24 * v**4 - 2 * v**2 + v)], domain=[[-1, 1]])
+environment = Continuous([lambda a: (24 * a**2 + a),
+                          lambda a: (-5 * a**3)], domain=[[-1, 1]])
+
+# environment = Continuous([lambda v: (24 * v**4 - 2 * v**2 + v)], domain=[[-1, 1]])
 
 # ~~~ Create the network ~~~
 network_params = {
@@ -90,7 +111,7 @@ network_params = {
     "units": [environment.size_input(), 20, 10, environment.size_output()],
 
     # Basis function(s) from Optimizer.py
-    "basis": basis_softplus,
+    "basis": basis_bent,
 
     # Weight initialization distribution
     "distribute": dist_normal
@@ -121,6 +142,7 @@ optimizer_params = {
     "epsilon": .04,           # error allowance
     "iteration_limit": 500000,  # limit on number of iterations to run
 
+    "debug_frequency": 50,
     "debug": True,
     "graph": True
     }

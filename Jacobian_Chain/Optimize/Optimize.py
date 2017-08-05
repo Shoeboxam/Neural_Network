@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from ..Array import Array
+from mpl_toolkits.mplot3d import Axes3D
 
 plt.style.use('fivethirtyeight')
 
@@ -67,9 +68,6 @@ class Optimize(object):
         plt.pause(0.00001)
 
         # Environment plot
-        plt.subplot(1, 2, 2)
-        plt.cla()
-        plt.title('Environment')
         self.environment.plot(plt, prediction)
 
         plt.pause(0.00001)

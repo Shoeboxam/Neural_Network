@@ -44,10 +44,11 @@ class Backpropagation(Optimize):
         self._cached_stimulus = []
 
     def minimize(self):
+
         iterate = np.vectorize(self.iterate)
         learn_anneal = np.vectorize(self.learn_anneal)
 
-        converged = False
+        converged = self.convergence_check()
         while not converged:
             self.iteration += 1
 

@@ -1,8 +1,8 @@
 # Use custom implementation:
-# from Jacobian_Chain import *
+from Jacobian_Chain import *
 
 # Use Tensorflow_Wrapper wrapper:
-from Tensorflow_Wrapper import *
+# from Tensorflow_Wrapper import *
 
 import urllib.request
 from io import BytesIO
@@ -102,10 +102,10 @@ environment = MNIST()
 # ~~~ Create the network ~~~
 network_params = {
     # Shape of network
-    "units": [environment.size_input(), 50, environment.size_output()],
+    "units": [environment.size_input(), 100, 100, 50, environment.size_output()],
 
-    # Basis function(s) from Optimizer.py
-    "basis": basis_logistic,
+    # Basis function(s) from network's Function.py
+    "basis": basis_bent,
     "basis_final": basis_softmax,
 
     # Distribution to use for weight initialization
@@ -117,7 +117,7 @@ network = Network(**network_params)
 # ~~~ Train the network ~~~
 optimizer_params = {
     # Source of stimuli
-    "batch_size": 1,
+    "batch_size": 5,
 
     "cost": cost_cross_entropy,
 
@@ -142,7 +142,7 @@ optimizer_params = {
     "graph": False
     }
 
-GradientDescent(network, environment, **optimizer_params).minimize()
+Adagrad(network, environment, **optimizer_params).minimize()
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()
