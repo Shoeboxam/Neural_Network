@@ -103,14 +103,14 @@ cost_softmax_CEE    = Function('cost', 'SMCEE',
                                [lambda O, P: (O * np.log(softmax(P))) + (1 - O) * np.log(1 - softmax(P)),
                                 lambda O, P: softmax(P) - O])
 
-# REGULARIZATION FUNCTIONS (weight decay)
-reg_L1   = Function('decay', 'L1',
+# MAX NORM FUNCTIONS (weight decay)
+reg_L1   = Function('reg', 'L1',
                      [lambda x: np.linalg.norm(x), lambda x: piecewise(x, -1, 1)])
 
-reg_L2   = Function('decay', 'L2',
+reg_L2   = Function('reg', 'L2',
                      [lambda x: x.T @ x, lambda x: 2*x])
 
-reg_L12  = Function('decay', 'L12',
+reg_L12  = Function('reg', 'L12',
                      [lambda x: decay_L1(x) + decay_L2(x), lambda x: decay_L1(x, d=1) + decay_L2(x, d=1)])
 
 
@@ -140,6 +140,14 @@ dist_normal  = Function('dist', 'normal',
 
 dist_binomial= Function('dist', 'binomial',
                         [lambda *args: np.random.binomial()])
+
+
+# CLIPPING FUNCTIONS
+clip_soft    = Function('clip', 'soft',
+                        [lambda x, c: x if np.linalg.norm(x) < c else x * c / np.linalg.norm(x)])
+
+clip_hard    = Function('clip', 'hard',
+                        [lambda x, c: np.clip(x, -c, c)])
 
 
 def piecewise(x, lower, upper, thresh=0):

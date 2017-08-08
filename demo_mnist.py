@@ -56,7 +56,7 @@ class MNIST:
     def _load_images(file_name):
         with open(file_name, 'rb') as image_file:
             ftype, length, rows, cols = struct.unpack(">IIII", image_file.read(16))
-            return np.fromfile(image_file, dtype=np.uint8).reshape(length, rows * cols).astype(float) / 256
+            return np.fromfile(image_file, dtype=np.uint8).reshape(length, rows * cols).astype(float) / 128 - 1
 
     @staticmethod
     def _load_labels(file_name):
@@ -123,14 +123,11 @@ optimizer_params = {
 
     # Learning rate
     "learn_step": 0.5,
-    "anneal": anneal_fixed,
+    "learn_anneal": anneal_fixed,
 
     # Weight decay regularization function
     "regularize_step": 0.0,
     "regularizer": reg_L2,
-
-    # Percent of weights to drop each training iteration
-    "dropout": 0.0,
 
     "epsilon": 0.0,           # error allowance
     "iteration_limit": None,  # limit on number of iterations to run

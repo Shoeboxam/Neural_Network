@@ -17,20 +17,29 @@ class Backpropagation(Optimize):
 
             # step size
             "learn_step": 0.01,
-            # modifies step size over time
             "learn_anneal": anneal_fixed,
             "learn_decay": 1.0,
 
-            # Weight regularizer (disabled by default)
+            # Weight decay (disabled by default)
             "regularize_step": 0.0,
             "regularizer": reg_L2,
 
-            "noise_size": 0.0,
-            "anneal_noise": anneal_inverse,
-
-            # Percent of weights to drop each training iteration
+            # Percent of weights to drop each training iteration (disabled by default)
             "dropout_step": 0.0,
             "dropconnect_step": 0.0,
+
+            # Maximum weight size (disabled by default)
+            "weight_clip": clip_soft,
+            "weight_threshold": 0.0,
+
+            # Maximum gradient size (disabled by default)
+            "gradient_clip": clip_soft,
+            "gradient_threshold": 0.0,
+
+            # Gradient noise (disabled by default)
+            "noise_variance": 0.0,
+            "noise_anneal": anneal_inverse,
+            "noise_decay": 0.5,
         }, **kwargs}
 
         super().__init__(network, environment, **settings)
@@ -38,6 +47,15 @@ class Backpropagation(Optimize):
         self.learn_step = self._broadcast(self.learn_step)
         self.learn_decay = self._broadcast(self.learn_decay)
         self.regularize_step = self._broadcast(self.regularize_step)
+
+        self.dropout_step = self._broadcast(self.dropout_step)
+        self.dropconnect_step = self._broadcast(self.dropconnect_step)
+
+        self.weight_threshold = self._broadcast(self.weight_threshold)
+        self.gradient_threshold = self._broadcast(self.gradient_threshold)
+
+        self.noise_variance = self._broadcast(self.noise_variance)
+        self.noise_decay = self._broadcast(self.noise_decay)
 
         self._cached_iteration = -1
         self._cached_gradient = []
@@ -56,10 +74,14 @@ class Backpropagation(Optimize):
             learn_rate = learn_anneal(self.iteration, self.learn_decay, self.iteration_limit) * self.learn_step
             iterate(learn_rate, list(range(len(learn_rate))))
 
-            # Apply weight regularization
-            for reg_step, weight in zip(self.regularize_step, self.network.weights):
-                if reg_step:
-                    weight -= reg_step * self.regularizer(weight, d=1)
+            for l, weight in enumerate(self.network.weights):
+                # Weight decay regularizer
+                if self.regularize_step[l]:
+                    self.network.weights[l] -= self.regularize_step[l] * self.regularizer(self.network.weights[l])
+
+                # Max norm constraint
+                if self.weight_threshold[l]:
+                    self.network.weights[l] = self.weight_clip(weight, self.weight_threshold[l])
 
             if self.iteration_limit is not None and self.iteration >= self.iteration_limit:
                 return true
@@ -113,12 +135,17 @@ class Backpropagation(Optimize):
             dr_dq = self.network.weights[layer][..., :-1]
             dq_dq = dq_dq @ dq_dr @ dr_dq
 
-        if self.noise_size:
+        for l in range(len(self._cached_gradient)):
+
             # https://arxiv.org/pdf/1511.06807.pdf
-            for l in range(len(self._cached_gradient)):
+            if self.noise_variance[l]:
                 # Schedule decay in variance
-                variance = self.noise_size / (1 + self.iteration)**.55
+                variance = self.noise_variance[l] * self.noise_anneal(self.iteration, self.noise_decay, self.iteration_limit)
                 self._cached_gradient[l] += np.random.normal(0, variance, [*self.network.weights[l].shape])
+
+            # https://arxiv.org/pdf/1211.5063.pdf
+            if self.gradient_threshold[l]:
+                self._cached_gradient[l] = self.gradient_clip(self._cached_gradient[l], self.gradient_threshold[l])
 
         self._cached_iteration = self.iteration
         return self._cached_gradient
@@ -132,26 +159,26 @@ class Backpropagation(Optimize):
         bias = np.ones([1, self.batch_size])
         self._cached_stimulus = [data]
 
-        for idx in range(len(self.network.weights)):
+        for l in range(len(self.network.weights)):
 
             # Dropout - https://www.cs.toronto.edu/~hinton/absps/JMLRdropout.pdf
-            if self.dropout_step:
+            if self.dropout_step[l]:
                 # Drop nodes from network
                 data[np.random.binomial(1, self.dropout_step, size=data.shape[0]).astype(bool)] = 0
                 # Resize remaining nodes to compensate for loss of nodes
                 data = data.astype(float) / (1 - self.dropout_step)
 
             # Dropconnect - https://cs.nyu.edu/~wanli/dropc/dropc.pdf
-            if self.dropconnect_step:
+            if self.dropconnect_step[l]:
                 # Drop connections from the network
-                mask = np.random.binomial(1, (1.0 - self.dropconnect_step), size=self.network.weights[idx].shape).astype(float)
+                mask = np.random.binomial(1, (1.0 - self.dropconnect_step), size=self.network.weights[l].shape).astype(float)
                 # Resize remaining nodes to compensate for loss of nodes
                 mask *= mask / (1.0 - self.dropconnect_step)
-                data = self.network.basis[idx](self.network.weights[idx] * mask @ np.vstack((data, bias)))
+                data = self.network.basis[l](self.network.weights[l] * mask @ np.vstack((data, bias)))
 
             else:
                 #  r = basis                  (W                         * s)
-                data = self.network.basis[idx](self.network.weights[idx] @ np.vstack((data, bias)))
+                data = self.network.basis[l](self.network.weights[l] @ np.vstack((data, bias)))
 
             self._cached_stimulus.append(data)
 

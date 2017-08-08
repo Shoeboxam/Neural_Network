@@ -82,7 +82,7 @@ optimizer_params = {
 
     # Learning rate
     "learn_step": .001,
-    "anneal": anneal_fixed,
+    "learn_anneal": anneal_fixed,
 
     # Weight decay regularization function
     "regularize_step": 0.0,
@@ -91,7 +91,7 @@ optimizer_params = {
     # Percent of weights to drop each training iteration
     # "dropout_step": 0.05,
     # "dropconnect_step": 0.05,
-    "noise_size": 1.,
+    "noise_variance": 1.,
 
     "epsilon": 0.04,          # error allowance
     "iteration_limit": None,  # limit on number of iterations to run

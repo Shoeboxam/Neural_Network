@@ -15,6 +15,7 @@ class GeneticAlgorithm(Optimize):
             "debug_frequency": 2000,
             'mutation_rate': 0.5,
             'mutation_anneal': anneal_fixed,
+            'mutation_decay': 0.5,
             'batch_size': 1
         }, **kwargs}
 
@@ -43,7 +44,7 @@ class GeneticAlgorithm(Optimize):
             parents = selection[np.argpartition(fitness, 2)[:2]]
 
             # Determine chance of mutation
-            mutation_chance = self.mutation_rate * self.mutation_anneal(self.iteration, self.iteration_limit)
+            mutation_chance = self.mutation_rate * self.mutation_anneal(self.iteration, self.mutation_decay, self.iteration_limit)
             mutate = np.random.binomial(1, mutation_chance)
 
             if mutate:

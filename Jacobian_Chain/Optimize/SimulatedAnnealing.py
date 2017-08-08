@@ -10,7 +10,8 @@ class SimulatedAnnealing(Optimize):
         # Default parameters
         settings = {**{
             'temperature_size': 0.4,
-            'temperature_anneal': anneal_invroot,  # Cooling schedule
+            'temperature_anneal': anneal_inverse,  # Cooling schedule
+            'temperature_decay': 0.5,
             'cost': cost_sum_squared,
             'distribute': dist_uniform,
             "debug_frequency": 2000,
@@ -27,7 +28,7 @@ class SimulatedAnnealing(Optimize):
         converged = False
         while not converged:
             self.iteration += 1
-            temperature = self.temperature_size * self.temperature_anneal(self.iteration, self.iteration_limit)
+            temperature = self.temperature_size * self.temperature_anneal(self.iteration, self.temperature_decay, self.iteration_limit)
 
             # Choose from population
             [stimulus, expectation] = self.environment.sample(quantity=self.batch_size)

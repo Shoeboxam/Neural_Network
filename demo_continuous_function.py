@@ -2,10 +2,10 @@
 from inspect import signature
 
 # Use custom implementation:
-# from Jacobian_Chain import *
+from Jacobian_Chain import *
 
 # Use Tensorflow wrapper:
-from Tensorflow_Wrapper import *
+# from Tensorflow_Wrapper import *
 
 
 from mpl_toolkits.mplot3d import Axes3D
@@ -82,7 +82,9 @@ class Continuous:
 
         # Output of function has arbitrary dimensions
         if y.shape[0] > 1:
+
             ax = plt.subplot(1, 2, 2, projection='3d')
+            plt.title('Environment')
             ax.plot(x[0], y[0], y[1], color=(0.3559, 0.7196, 0.8637))
             ax.plot(x[0], predict[0], predict[1], color=(.9148, .604, .0945))
             ax.view_init(elev=10., azim=self.viewpoint)
@@ -101,21 +103,21 @@ class Continuous:
 # environment = Continuous([lambda a, b: (24 * a - 2 * b**2 + a),
 #                           lambda a, b: (-5 * a**3 + 2 * b**2 + b)], domain=[[-1, 1]] * 2)
 
-environment = Continuous([lambda x: np.sin(x),
-                          lambda x: np.cos(x)], domain=[[-2 * np.pi, 10 * np.pi], [-np.pi, np.pi]])
+# environment = Continuous([lambda x: np.sin(x),
+#                           lambda x: np.cos(x)], domain=[[-2 * np.pi, 2 * np.pi], [-np.pi, np.pi]])
 
-# environment = Continuous([lambda a: (24 * a**2 + a),
-#                           lambda a: (-5 * a**3)], domain=[[-1, 1]])
+environment = Continuous([lambda a: (24 * a**2 + a),
+                          lambda a: (-5 * a**3)], domain=[[-1, 1]])
 
 # environment = Continuous([lambda v: (24 * v**4 - 2 * v**2 + v)], domain=[[-1, 1]])
 
 # ~~~ Create the network ~~~
 network_params = {
     # Shape of network
-    "units": [environment.size_input(), 5, environment.size_output()],
+    "units": [environment.size_input(), 5, 5, environment.size_output()],
 
     # Basis function(s) from Optimizer.py
-    "basis": basis_sinusoid,
+    "basis": basis_bent,
 
     # Weight initialization distribution
     "distribute": dist_normal
@@ -132,16 +134,12 @@ optimizer_params = {
     "cost": cost_sum_squared,
 
     # Learning rate
-    "learn_step": .1,
-    "anneal": anneal_inverse,
+    "learn_step": 1,
+    "learn_anneal": anneal_inverse,
+    "learn_decay": 0.1,
 
-    # Weight decay regularization function
-    "regularize_step": 0.0,
-    "regularizer": reg_L12,
-
-    # Percent of weights to drop each training iteration
-    # "dropout_step": 0.05,
-    # "dropconnect_step": 0.05,
+    "weight_clipping": clip_soft,
+    "weight_threshold": 5,
 
     "epsilon": .04,           # error allowance
     "iteration_limit": 500000,  # limit on number of iterations to run

@@ -16,16 +16,12 @@ class Backpropagation(Optimize):
 
             # step size
             "learn_step": 0.01,
-            # modifies step size over time
             "learn_anneal": anneal_fixed,
             "learn_decay": 1.0,
 
             # Weight regularizer (disabled by default)
             "regularize_step": 0.0,
             "regularizer": reg_L2,
-
-            "noise_size": 0.0,
-            "anneal_noise": anneal_inverse,
 
             # Percent of weights to drop each training iteration
             "dropout_step": 0.0,
