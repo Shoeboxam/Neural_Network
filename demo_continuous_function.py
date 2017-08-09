@@ -103,21 +103,21 @@ class Continuous:
 # environment = Continuous([lambda a, b: (24 * a - 2 * b**2 + a),
 #                           lambda a, b: (-5 * a**3 + 2 * b**2 + b)], domain=[[-1, 1]] * 2)
 
-# environment = Continuous([lambda x: np.sin(x),
-#                           lambda x: np.cos(x)], domain=[[-2 * np.pi, 2 * np.pi], [-np.pi, np.pi]])
+environment = Continuous([lambda x: np.sin(x),
+                          lambda x: np.cos(x)], domain=[[-2 * np.pi, 2 * np.pi], [-np.pi, np.pi]])
 
-environment = Continuous([lambda a: (24 * a**2 + a),
-                          lambda a: (-5 * a**3)], domain=[[-1, 1]])
+# environment = Continuous([lambda a: (24 * a**2 + a),
+#                           lambda a: (-5 * a**3)], domain=[[-1, 1]])
 
 # environment = Continuous([lambda v: (24 * v**4 - 2 * v**2 + v)], domain=[[-1, 1]])
 
 # ~~~ Create the network ~~~
 network_params = {
     # Shape of network
-    "units": [environment.size_input(), 5, 5, environment.size_output()],
+    "units": [environment.size_input(), environment.size_output()],
 
     # Basis function(s) from Optimizer.py
-    "basis": basis_bent,
+    "basis": basis_sinusoid,
 
     # Weight initialization distribution
     "distribute": dist_normal
