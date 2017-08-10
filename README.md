@@ -5,13 +5,15 @@ https://shoeboxam.github.io/Neural_Network/
 
 There are two different implementations of the same network:
 
-|       Folder       |            Purpose            |
-|--------------------|-------------------------------|
-| Jacobian_Chain     | Custom network via chain rule |
-| Tensorflow_Wrapper | Same network in Tensorflow    |
+|   Folder  |                       Name                      |
+|-----------|-------------------------------------------------|
+| MFP       | Multilayer Feedforward Perceptron in Numpy      |
+| MFP_TF    | Multilayer Feedforward Perceptron in Tensorflow |
+| MFP_Graph | MFP with configurable architecture (incomplete) |
+| RBM       | Restricted Boltzmann Machine (incomplete)       |
 
 
-Within each folder, there is the following structure:  
+Each implementation has the following structure:  
 
 |     File    |           Purpose           |
 |-------------|-----------------------------|
@@ -28,7 +30,7 @@ To use the library, follow the examples shown in the demonstration files:
 | demo_mnist.py               | Learn to classify the MNIST dataset         |
 
 
-The following features are supported in the Jacobian_Chain network:  
+The following features are supported in the MFP network:  
 - Optimizers
     + Backpropagation
         * Gradient Descent
