@@ -1,10 +1,15 @@
+# Core data structure for a multilayer feedforward perceptron network
+# This implementation is restricted to 'caterpillar' function graphs
+# This implementation shares the same interface as the MFP network
+
+
 import matplotlib.pyplot as plt
 
 from .Function import *
 import tensorflow as tf
 
 
-class Network(object):
+class MFP(object):
     # Units:       List of quantity of nodes per layer
     # Basis:       logistic, rectilinear...
     # Delta:       sum squared, cross entropy error

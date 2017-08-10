@@ -1,8 +1,8 @@
 # Use custom implementation:
-from Jacobian_Chain import *
+from MFP import *
 
-# Use Tensorflow_Wrapper wrapper:
-# from Tensorflow_Wrapper import *
+# Use MFP_TF wrapper:
+# from MFP_TF import *
 
 import urllib.request
 from io import BytesIO

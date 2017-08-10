@@ -1,3 +1,5 @@
+# Collection of functions shared by the MFP network and optimizer
+
 import tensorflow as tf
 
 

@@ -1,5 +1,5 @@
 import numpy as np
-from Jacobian_Chain.Array import Array
+from MFP.Array import Array
 
 
 class Function(object):

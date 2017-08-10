@@ -2,10 +2,10 @@
 from inspect import signature
 
 # Use custom implementation:
-from Jacobian_Chain import *
+from MFP import *
 
 # Use Tensorflow wrapper:
-# from Tensorflow_Wrapper import *
+# from MFP_TF import *
 
 
 from mpl_toolkits.mplot3d import Axes3D

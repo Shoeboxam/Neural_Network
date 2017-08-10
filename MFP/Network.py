@@ -1,3 +1,7 @@
+# Core data structure for a multilayer feedforward perceptron network
+# This implementation is restricted to 'caterpillar' function graphs
+# This implementation shares the same interface as the MFP_TF network
+
 import matplotlib.pyplot as plt
 from .Array import Array
 from .Function import *

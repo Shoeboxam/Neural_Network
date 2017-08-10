@@ -1,5 +1,8 @@
+# Optimizer foundation specific to restricted boltzmann machines
+# Handles graphing, debug and settings
+# Adapted from MFP/Optimize/Optimize.py
+
 import matplotlib.pyplot as plt
-from ..Array import Array
 from mpl_toolkits.mplot3d import Axes3D
 
 plt.style.use('fivethirtyeight')
@@ -28,7 +31,7 @@ class Optimize(object):
             self.plot_points = []
 
     def convergence_check(self):
-        [inputs, expectation] = map(Array, self.environment.survey())
+        [inputs, expectation] = self.environment.survey()
         prediction = self.network.predict(inputs)
         error = self.environment.error(expectation, prediction)
 
@@ -47,12 +50,11 @@ class Optimize(object):
         print("Iteration: " + str(self.iteration))
         print("Error: " + str(kwargs['error']))
 
-        for layer, weight in enumerate(self.network.weights):
-            # Check for oversaturated weights
-            if self.debug:
-                maximum = max(weight.min(), weight.max(), key=abs)
-                if maximum > 1000:
-                    print("Layer " + str(layer) + " weights are too large: " + str(maximum))
+        # Check for oversaturated weights
+        if self.debug:
+            maximum = max(self.network.weight.min(), self.network.weight.max(), key=abs)
+            if maximum > 1000:
+                print("Weights are too large: " + str(maximum))
 
         # print(kwargs['prediction'])
         # print(kwargs['expectation'])
@@ -73,10 +75,3 @@ class Optimize(object):
         self.environment.plot(plt, prediction)
 
         plt.pause(0.00001)
-
-    def _broadcast(self, parameter):
-        if type(parameter) is not list:
-            return Array([parameter] * len(self.network.weights))
-        if len(parameter) != len(self.network.weights):
-            raise ValueError('Parameter length does not match number of layers.')
-        return Array(parameter)

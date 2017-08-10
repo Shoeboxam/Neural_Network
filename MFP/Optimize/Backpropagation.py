@@ -1,8 +1,14 @@
+# The gradient is computed in the Backpropagation class
+# The child convergence method classes implement various types of weight updates
+
 import numpy as np
 
 from .Optimize import Optimize
 from ..Array import Array
 from ..Function import *
+
+# The following convergence methods are made available on 'import *'
+__all__ = ['GradientDescent', 'Momentum', 'Nesterov', 'Adagrad', 'RMSprop', 'Adam', 'Adamax', 'Nadam', 'Quickprop']
 
 
 class Backpropagation(Optimize):

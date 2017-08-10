@@ -1,3 +1,3 @@
 from .Function import *
 from .Optimize.Backpropagation import *
-from .Network import Network
+from .Network import MFP

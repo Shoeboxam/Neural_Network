@@ -1,10 +1,8 @@
 # Learn a logic gate
 
-# Use custom implementation:
-# from Jacobian_Chain import *
+# Use Restricted Boltzmann Machine:
+from RBM import *
 
-# Use Tensorflow wrapper:
-from Tensorflow_Wrapper import *
 
 import itertools
 import math
@@ -20,7 +18,7 @@ class LogicGate:
             raise TypeError('Length of expectation must be a power of two.')
 
         self._expectation = expectation
-        self._environment = np.array([i for i in itertools.product([-1, 1], repeat=int(bit_length))])
+        self._environment = np.array([i for i in itertools.product([0, 1], repeat=int(bit_length))])
 
     def sample(self, quantity=1):
         choice = np.random.randint(np.shape(self._environment)[0], size=quantity)
@@ -38,7 +36,7 @@ class LogicGate:
 
     def plot(self, plt, predict):
         data = np.zeros((2**self.size_input(), 2))
-        predict = np.clip(predict[0], -1, 1)
+        predict = np.clip(predict[0], 0, 1)
 
         for idx, index_bits in enumerate((self._environment.astype(float) + 1) / 2):
             out = 0
@@ -51,47 +49,35 @@ class LogicGate:
 
     @staticmethod
     def error(expect, predict):
+        print(expect)
+        print(predict)
         return np.linalg.norm(expect - predict)
 
-# environment = LogicGate(np.array([[-1], [1], [1], [-1]]))
-environment = LogicGate(np.array([[-1], [1], [1], [-1], [1], [-1], [-1], [-1]]))
-# environment = LogicGate(np.array([[1], [-1], [-1], [1], [-1], [-1], [1], [-1]]))
-
-# Notice: The plot will only graph the first dimension of an n-dimensional input.
-# environment = LogicGate(np.array([[-1, -1], [1, -1], [1, -1], [-1, 1]]))
+# environment = LogicGate(np.array([[0], [1], [1], [0]]))
+# environment = LogicGate(np.array([[0], [1], [1], [0], [1], [0], [0], [0]]))
+environment = LogicGate(np.array([[1], [0], [0], [1], [0], [0], [1], [0]]))
 
 # ~~~ Create the network ~~~
 network_params = {
     # Shape of network
-    "units": [environment.size_input(), 20, 10, environment.size_output()],
+    'input_nodes': environment.size_input(),
+    'output_nodes': environment.size_output(),
 
-    # Basis function(s) from Optimizer.py
-    "basis": basis_bent,
-    "basis_final": basis_logistic,
+    "basis": basis_logistic,
 
     # Weight initialization distribution
-    "distribute": dist_uniform
+    "distribute": dist_normal
     }
 
-network = Network(**network_params)
+network = RBM(**network_params)
 
 # ~~~ Train the network ~~~
 optimizer_params = {
-    "cost": cost_sum_squared,
-    "batch_size": 5,
+    "batch_size": 1,
 
     # Learning rate
     "learn_step": .001,
     "learn_anneal": anneal_fixed,
-
-    # Weight decay regularization function
-    "regularize_step": 0.0,
-    "regularizer": reg_L2,
-
-    # Percent of weights to drop each training iteration
-    # "dropout_step": 0.05,
-    # "dropconnect_step": 0.05,
-    "noise_variance": 1.,
 
     "epsilon": 0.04,          # error allowance
     "iteration_limit": None,  # limit on number of iterations to run
@@ -100,7 +86,7 @@ optimizer_params = {
     "graph": True
     }
 
-GradientDescent(network, environment, **optimizer_params).minimize()
+ContrastiveDivergence(network, environment, **optimizer_params).minimize()
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()
