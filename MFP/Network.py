@@ -11,7 +11,7 @@ import json
 plt.style.use('fivethirtyeight')
 
 
-class Network(object):
+class MFP(object):
     # Units:       List of quantity of nodes per layer
     # Basis:       logistic, rectilinear...
     # Distribute:  weight matrix init (uniform, normal)

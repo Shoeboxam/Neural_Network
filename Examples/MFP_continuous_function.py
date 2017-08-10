@@ -123,7 +123,7 @@ network_params = {
     "distribute": dist_normal
     }
 
-network = Network(**network_params)
+network = MFP(**network_params)
 
 # ~~~ Train the network ~~~
 optimizer_params = {
