@@ -36,11 +36,16 @@ class Continuous:
 
     def sample(self, quantity=1):
         # Generate random values for each input stimulus
+
         axes = []
         for idx in range(self._size_input):
             axes.append(np.random.uniform(low=self._domain[idx][0], high=self._domain[idx][1], size=quantity))
 
-        stimulus = np.array(np.meshgrid(*axes)).reshape(self._size_input, -1)
+        meshgrid = np.array(np.meshgrid(*axes)).reshape(self._size_input, -1)
+
+        # Subsample meshgrid
+        axes_selections = np.random.randint(meshgrid.shape[1], size=quantity)
+        stimulus = meshgrid[:, axes_selections]
 
         # Evaluate each function with the stimuli
         expectation = []
@@ -50,17 +55,19 @@ class Continuous:
         return [np.array(stimulus), np.array(expectation)]
 
     def survey(self, quantity=100):
-        # Generate random values for each input stimulus
+        axis_length = int(quantity**(1 / self.size_input()))
         axes = []
         for idx in range(self._size_input):
-            axes.append(np.linspace(start=self._domain[idx][0], stop=self._domain[idx][1], num=quantity))
+            axes.append(np.linspace(start=self._domain[idx][0], stop=self._domain[idx][1], num=axis_length))
 
         stimulus = np.array(np.meshgrid(*axes)).reshape(self._size_input, -1)
+
         # Evaluate each function with the stimuli
         expectation = []
         for idx, f in enumerate(self._funct):
             expectation.append(f(*stimulus))
 
+        print(np.shape(stimulus))
         return [np.array(stimulus), np.array(expectation)]
 
     def size_input(self):
@@ -85,8 +92,8 @@ class Continuous:
 
             ax = plt.subplot(1, 2, 2, projection='3d')
             plt.title('Environment')
-            ax.plot(x[0], y[0], y[1], color=(0.3559, 0.7196, 0.8637))
-            ax.plot(x[0], predict[0], predict[1], color=(.9148, .604, .0945))
+            ax.scatter(x[0], y[0], y[1], color=(0.3559, 0.7196, 0.8637))
+            ax.scatter(x[0], predict[0], predict[1], color=(.9148, .604, .0945))
             ax.view_init(elev=10., azim=self.viewpoint)
             self.viewpoint += 5
 
@@ -94,27 +101,26 @@ class Continuous:
     def error(expect, predict):
         return np.linalg.norm(expect - predict)
 
-
-# environment = Continuous([lambda a, b: (24 * a**4 - 2 * b**2 + a),
-#                           lambda a, b: (-5 * a**3 + 2 * b**2 + b),
-#                           lambda a, b: (12 * a**2 + 8 * b**3 + b),
+# environment = Continuous([lambda a, b: (24 * a**2 - 2 * b**2 + a),
 #                           lambda a, b: (12 * a ** 2 + 12 * b ** 3 + b)], domain=[[-1, 1]] * 2)
 
-# environment = Continuous([lambda a, b: (24 * a - 2 * b**2 + a),
-#                           lambda a, b: (-5 * a**3 + 2 * b**2 + b)], domain=[[-1, 1]] * 2)
+environment = Continuous([lambda a, b: (2 * b**2 + 0.5 * a**3),
+                          lambda a, b: (0.5 * a**3 + 2 * b**2 - b)], domain=[[-1, 1]] * 2)
 
 # environment = Continuous([lambda x: np.sin(x),
 #                           lambda x: np.cos(x)], domain=[[-2 * np.pi, 2 * np.pi], [-np.pi, np.pi]])
 
-environment = Continuous([lambda a: (24 * a**2 + a),
-                          lambda a: (-5 * a**3)], domain=[[-1, 1]])
+# environment = Continuous([lambda a: (24 * a**2 + a),
+#                           lambda a: (-5 * a**3)], domain=[[-1, 1]])
+
+# environment = Continuous([lambda x: np.cos(1 / x)], domain=[[-1, 1]])
 
 # environment = Continuous([lambda v: (24 * v**4 - 2 * v**2 + v)], domain=[[-1, 1]])
 
 # ~~~ Create the network ~~~
 network_params = {
     # Shape of network
-    "units": [environment.size_input(), 5, 5, environment.size_output()],
+    "units": [environment.size_input(), 20, 10, environment.size_output()],
 
     # Basis function(s) from Optimizer.py
     "basis": basis_bent,
@@ -128,14 +134,14 @@ network = MFP(**network_params)
 # ~~~ Train the network ~~~
 optimizer_params = {
     # Source of stimuli
-    "batch_size": 10,
+    "batch_size": 100,
 
     # Error function from Optimizer.py
     "cost": cost_sum_squared,
 
     # Learning rate
-    "learn_step": 1,
-    "learn_anneal": anneal_inverse,
+    "learn_step": 0.05,
+    "learn_anneal": anneal_fixed,
     "learn_decay": 0.1,
 
     "weight_clipping": clip_soft,

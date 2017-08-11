@@ -17,13 +17,24 @@ class MFP(object):
     # Distribute:  weight matrix init (uniform, normal)
     # Basis_final: ignored when basis is a list
 
-    def __init__(self, units, basis=basis_bent, distribute=dist_normal, basis_final=None):
+    def __init__(self, units, basis=basis_bent, distribute=dist_normal, basis_final=None, orthogonalize=False):
 
         # Weight and bias initialization.
         # Initial random numbers are scaled by layer size (reminds me of standard error of the mean)
         self.weights = []
         for idx in range(len(units) - 1):
-            self.weights.append(Array(distribute(units[idx + 1], units[idx] + 1) / np.sqrt(units[idx])))
+            weights = distribute(units[idx + 1], units[idx] + 1) / np.sqrt(units[idx])
+
+            if orthogonalize:
+                # Same implementation as Lasagne; https://arxiv.org/pdf/1312.6120.pdf
+                u, _, v = np.linalg.svd(weights, full_matrices=False)
+                weights = u if u.shape == weights.shape else v
+
+            self.weights.append(Array(weights))
+
+        # Learned values for batch normalization
+        self.mean = [0.] * (len(units) + 1)
+        self.variance = [1.] * (len(units) + 1)
 
         # Broadcast basis function, so that each layer has one
         if type(basis) is not list:
