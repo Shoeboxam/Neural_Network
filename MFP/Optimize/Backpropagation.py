@@ -26,6 +26,9 @@ class Backpropagation(Optimize):
             "learn_anneal": anneal_fixed,
             "learn_decay": 1.0,
 
+            # Batch norm regularization decay rate (disabled by default)
+            "batch_normalize": 0.0,
+
             # Weight decay (disabled by default)
             "regularize_step": 0.0,
             "regularizer": reg_L2,
@@ -67,6 +70,9 @@ class Backpropagation(Optimize):
         self._cached_gradient = []
         self._cached_stimulus = []
 
+        # Cache the gradient down to batch norm separately
+        self._cached_gradient_batch = []
+
     def minimize(self):
 
         iterate = np.vectorize(self.iterate)
@@ -85,7 +91,7 @@ class Backpropagation(Optimize):
                 if self.regularize_step[l]:
                     self.network.weights[l] -= self.regularize_step[l] * self.regularizer(self.network.weights[l])
 
-                # Max norm constraint
+                # Max norm constraint - 5.1 http://jmlr.org/papers/volume15/srivastava14a/srivastava14a.pdf
                 if self.weight_threshold[l]:
                     self.network.weights[l] = self.weight_clip(weight, self.weight_threshold[l])
 
@@ -132,6 +138,7 @@ class Backpropagation(Optimize):
 
             # Chain rule for full derivative
             # Matrix operators have left-to-right associativity
+            # This is a tensor product simplification to avoid the use of the kron product
             dln_dW = (dln_dq @ dq_dq @ dq_dr).T @ dr_dW
 
             self._cached_gradient.insert(0, np.average(dln_dW, axis=2))
@@ -163,6 +170,11 @@ class Backpropagation(Optimize):
             return self._cached_stimulus
 
         bias = np.ones([1, self.batch_size])
+
+        # Normalize and scale/shift initial input (batch norm regularization)
+        if self.batch_normalize:
+            data = (data - self.network.mean[0]) / np.sqrt(self.network.variance[0] + 1e-8)
+            data = self.network.scale[0] * data + self.network.shift[0]
         self._cached_stimulus = [data]
 
         for l in range(len(self.network.weights)):
@@ -180,12 +192,26 @@ class Backpropagation(Optimize):
                 mask = np.random.binomial(1, (1.0 - self.dropconnect_step), size=self.network.weights[l].shape).astype(float)
                 # Resize remaining nodes to compensate for loss of nodes
                 mask *= mask / (1.0 - self.dropconnect_step)
-                data = self.network.basis[l](self.network.weights[l] * mask @ np.vstack((data, bias)))
+                data = self.network.weights[l] * mask @ np.vstack((data, bias))
 
             else:
-                #  r = basis                  (W                         * s)
-                data = self.network.basis[l](self.network.weights[l] @ np.vstack((data, bias)))
+                #  r = W                       * s
+                data = self.network.weights[l] @ np.vstack((data, bias))
 
+            # Batch norm regularizer update  - https://arxiv.org/pdf/1502.03167.pdf
+            if self.batch_normalize:
+                mean = np.average(self._cached_stimulus[l])
+                self.network.mean[l] = self.batch_normalize * self.network.mean[l] + (1 - self.batch_normalize) * mean
+
+                variance = np.var(self._cached_stimulus[l])
+                self.network.variance[l] = self.batch_normalize * self.network.variance[l] + (1 - self.batch_normalize) * variance
+
+                # Normalize output of linear transform, then scale and shift
+                data = (data - self.network.mean[l + 1]) / np.sqrt(self.network.variance[l + 1] + 1e-8)
+                data = self.network.scale[l + 1] * data + self.network.shift[l + 1]
+
+            # Important: apply activation function to transform into next subspace
+            data = self.network.basis[l](data)
             self._cached_stimulus.append(data)
 
         return self._cached_stimulus
@@ -252,6 +278,7 @@ class Adadelta(Backpropagation):
         self.update_square = [Array(np.zeros([theta.shape[0]] * 2)) for theta in network.weights]
 
     def iterate(self, rate, l):
+        # TODO: This method is not converging
         # EQN 14: https://arxiv.org/pdf/1212.5701.pdf
         # Rate is derived
         self.grad_square[l] = self.decay[l] * self.grad_square[l] + \

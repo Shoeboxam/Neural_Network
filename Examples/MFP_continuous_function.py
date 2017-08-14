@@ -54,8 +54,10 @@ class Continuous:
 
         return [np.array(stimulus), np.array(expectation)]
 
-    def survey(self, quantity=100):
-        axis_length = int(quantity**(1 / self.size_input()))
+    def survey(self, quantity=128):
+        # Quantity is adjusted to the closest meshgrid approximation
+        axis_length = round(quantity**self._size_output**-1)
+
         axes = []
         for idx in range(self._size_input):
             axes.append(np.linspace(start=self._domain[idx][0], stop=self._domain[idx][1], num=axis_length))
@@ -143,6 +145,8 @@ optimizer_params = {
     "learn_step": 0.05,
     "learn_anneal": anneal_fixed,
     "learn_decay": 0.1,
+
+    "batch_normalize": 0.0,  # Backprop for scale and shift not implemented.
 
     "weight_clipping": clip_soft,
     "weight_threshold": 5,
