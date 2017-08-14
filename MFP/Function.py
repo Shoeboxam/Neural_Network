@@ -133,13 +133,10 @@ anneal_exp     = Function('learn', 'exp',
 
 # DISTRIBUTION FUNCTIONS
 dist_uniform = Function('dist', 'uniform',
-                        [lambda *args: np.random.uniform(low=-1, high=1, size=[*args])])
+                        [lambda *args: np.random.uniform(low=-1, high=1, size=args)])
 
 dist_normal  = Function('dist', 'normal',
-                        [lambda *args: np.random.normal(loc=0, scale=1, size=[*args])])
-
-dist_binomial= Function('dist', 'binomial',
-                        [lambda *args: np.random.binomial()])
+                        [lambda *args: np.random.normal(loc=0, scale=1, size=args)])
 
 
 # CLIPPING FUNCTIONS

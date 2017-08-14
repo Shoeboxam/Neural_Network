@@ -35,7 +35,7 @@ class MFP(object):
 
             self.weights.append(Array(weights))
 
-        # Batch norm: normalization parameters
+        # Batch norm: normalization parameters (default is identity)
         self.variance = [1.] * (len(units) + 1)
         self.mean = [0.] * (len(units) + 1)
         self.scale = [1.] * (len(units) + 1)
