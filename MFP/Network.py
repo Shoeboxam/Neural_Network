@@ -55,13 +55,17 @@ class MFP(object):
         bias = np.ones([1, data.shape[1]])
 
         def batch_norm(x, l):
-            scale = self.scale[l] / np.sqrt(np.var(data) + 1e-8)
-            shift = (self.shift[l] - self.scale[l] * np.average(data) / np.sqrt(np.var(data) + 1e-8))
-            return x * scale + shift
+            print()
+            print(self.variance[l] / self.scale[l])
+            print(self.mean[l] - self.shift[l])
+            normalized = (x - self.mean[l]) / np.abs(self.variance[l] + 1e-8)
+            return self.scale[l] * normalized + self.shift[l]
+
+        data = batch_norm(data, 0)
 
         for idx in range(len(self.weights)):
             # Batch norm regularization
-            data = batch_norm(data, idx)
+            data = batch_norm(data, idx + 1)
             #  r = basis                     (W                 * s)
             data = self.basis[idx](batch_norm(self.weights[idx] @ np.vstack([data, bias]), idx))
 

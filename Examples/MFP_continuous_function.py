@@ -69,7 +69,6 @@ class Continuous:
         for idx, f in enumerate(self._funct):
             expectation.append(f(*stimulus))
 
-        print(np.shape(stimulus))
         return [np.array(stimulus), np.array(expectation)]
 
     def size_input(self):
@@ -142,11 +141,12 @@ optimizer_params = {
     "cost": cost_sum_squared,
 
     # Learning rate
-    "learn_step": 0.05,
+    "learn_step": 0.001,
     "learn_anneal": anneal_fixed,
     "learn_decay": 0.1,
 
-    "batch_normalize": 0.0,  # Backprop for scale and shift not implemented.
+    "batch_norm_step": 0.001,
+    "batch_norm_decay": 0.95,
 
     "weight_clipping": clip_soft,
     "weight_threshold": 5,
