@@ -16,7 +16,6 @@ from MFP import *
         #       #  ####  ###### ######   #      """
 
 # http://www.figlet.org/
-fonts = ['banner', '3x5']
 
 
 class FigletFonts:
@@ -56,7 +55,7 @@ class FigletFonts:
             for classidx, char_class in self.character_set.items():
                 self.stimuli[idx][np.where(self.stimuli[idx] == char_class)] = classidx
 
-            self.stimuli[idx] = np.pad(self.stimuli[idx], ((0, 0), (0, self.max_width - self.stimuli[idx].shape[1])), 'edge')
+            self.stimuli[idx] = np.pad(self.stimuli[idx], ((0, 0), (0, self.max_width - self.stimuli[idx].shape[1])), 'constant')
             self.stimuli[idx] = self.stimuli[idx].flatten()
 
         self.stimuli = np.array(self.stimuli)
@@ -126,12 +125,12 @@ class FigletFonts:
 
 
 ascii_vals = [i for i in range(65, 91)]
-environment = FigletFonts(fonts[1], noise=0.0, autoencoder=True, ascii_vals=ascii_vals)
+environment = FigletFonts('banner3', noise=0.0, autoencoder=True, ascii_vals=ascii_vals)
 
 # ~~~ Create the network ~~~
 network_params = {
     # Shape of network
-    "units": [environment.size_input(), 100, 75, environment.size_output()],
+    "units": [environment.size_input(), 150, environment.size_output()],
 
     # Basis function(s) from network's Function.py
     "basis": basis_logistic,
@@ -157,7 +156,7 @@ optimizer_params = {
     "epsilon": 0.0,           # error allowance
     "iteration_limit": None,  # limit on number of iterations to run
 
-    "debug_frequency": 100,
+    "debug_frequency": 20,
     "debug": True,
     "graph": True
     }
