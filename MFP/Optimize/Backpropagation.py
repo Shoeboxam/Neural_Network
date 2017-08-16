@@ -21,7 +21,7 @@ class Backpropagation(Optimize):
             # Batch size:  number of samples per training epoch
             "batch_size": 1,
 
-            # step size
+            # Step size
             "learn_step": 0.01,
             "learn_anneal": anneal_fixed,
             "learn_decay": 1.0,
@@ -57,7 +57,7 @@ class Backpropagation(Optimize):
         self.learn_step = self._broadcast(self.learn_step)
         self.learn_decay = self._broadcast(self.learn_decay)
         self.regularize_step = self._broadcast(self.regularize_step)
-        self.batch_norm_step = self._broadcast(self.batch_norm_step, length=len(self.network.weights) + 1)
+        self.batch_norm_step = self._broadcast(self.batch_norm_step)
 
         self.dropout_step = self._broadcast(self.dropout_step)
         self.dropconnect_step = self._broadcast(self.dropconnect_step)
@@ -89,11 +89,6 @@ class Backpropagation(Optimize):
             learn_rate = learn_anneal(self.iteration, self.learn_decay, self.iteration_limit) * self.learn_step
             iterate(learn_rate, list(range(len(learn_rate))))
 
-            if self.batch_norm_step[0]:
-                # Update values with a simple hardcoded gradient descent
-                self.network.scale[0] -= self.batch_norm_step[0] * self._cached_gradient_scale[0]
-                self.network.shift[0] -= self.batch_norm_step[0] * self._cached_gradient_shift[0]
-
             for l, weight in enumerate(self.network.weights):
                 # Weight decay regularizer
                 if self.regularize_step[l]:
@@ -104,10 +99,11 @@ class Backpropagation(Optimize):
                     self.network.weights[l] = self.weight_clip(weight, self.weight_threshold[l])
 
                 # Batch norm regularizer - https://arxiv.org/pdf/1502.03167.pdf
-                if self.batch_norm_step[l + 1]:
+                if self.batch_norm_step[l]:
                     # Update values with a simple hardcoded gradient descent
-                    self.network.scale[l + 1] -= self.batch_norm_step[l + 1] * self._cached_gradient_scale[l]
-                    self.network.shift[l + 1] -= self.batch_norm_step[l + 1] * self._cached_gradient_shift[l]
+                    # print(self._cached_gradient_scale[l])
+                    self.network.scale[l] -= self.batch_norm_step[l] * self._cached_gradient_scale[l]
+                    self.network.shift[l] -= self.batch_norm_step[l] * self._cached_gradient_shift[l]
 
             if self.iteration_limit is not None and self.iteration >= self.iteration_limit:
                 return true
@@ -145,15 +141,15 @@ class Backpropagation(Optimize):
         # Train each weight set sequentially
         for l in reversed(range(len(self.network.weights))):
 
-            # reinforcement = W             * s
+            # reinforcement = W         * s
             r = self.network.weights[l] @ np.vstack((s[l], bias))
 
             # Basis function derivative
             dq_dr = Array(self.network.basis[l](r, d=1))
 
-            if self.batch_norm_step[l + 1]:
+            if self.batch_norm_step[l]:
                 # Derivative of basis with respect to stimulus through batch norm
-                dq_dr *= self.network.scale[l + 1] / np.abs(self.network.variance[l + 1] + 1e-8)
+                dq_dr *= self.network.scale[l] / (self.network.deviance[l] + 1e-8)
 
             # Final reinforcement derivative
             dr_dW = np.vstack((s[l], bias))[None]
@@ -166,13 +162,13 @@ class Backpropagation(Optimize):
             dln_dW = dln_dr.T @ dr_dW
             self._cached_gradient.insert(0, np.average(dln_dW, axis=2))
 
-            if self.batch_norm_step[l + 1]:
+            if self.batch_norm_step[l]:
                 # Batch norm derivative: scale, where shape is [1, 1, self.batch_size]
-                dln_dscale = dln_dr @ ((r - self.network.mean[l + 1]) / np.abs(self.network.variance[l + 1] + 1e-8))[:, None, :]
+                dln_dscale = dln_dq @ dq_dq @ ((r - self.network.mean[l])[None,...] / (self.network.deviance[l] + 1e-8))[:, None, :]
                 self._cached_gradient_scale.insert(0, np.average(dln_dscale))
 
                 # Batch norm derivative: shift, where shape is [1, 1, self.batch_size]
-                dln_dshift = dln_dr
+                dln_dshift = dln_dq @ dq_dq
                 self._cached_gradient_shift.insert(0, np.average(dln_dshift))
 
             # ~~~~~~~ Update internal state ~~~~~~~
@@ -202,10 +198,6 @@ class Backpropagation(Optimize):
             return self._cached_stimulus
 
         bias = np.ones([1, self.batch_size])
-
-        if self.batch_norm_step[0]:
-            data = self.batch_normalize(data, 0)
-
         self._cached_stimulus = [data]
 
         for l in range(len(self.network.weights)):
@@ -229,27 +221,24 @@ class Backpropagation(Optimize):
                 #  r = W                       * s
                 data = self.network.weights[l] @ np.vstack((data, bias))
 
-            if self.batch_norm_step[l + 1]:
-                data = self.batch_normalize(data, l + 1)
+            if self.batch_norm_step[l]:
+                # Computes batch norm update and updates the deviation and mean estimates
+                mean = np.average(data)
+                self.network.mean[l] = self.batch_norm_decay * self.network.mean[l] + (1 - self.batch_norm_decay) * mean
+
+                deviance = np.average(np.std(data, axis=1))
+                self.network.deviance[l] = self.batch_norm_decay * self.network.deviance[l] + (1 - self.batch_norm_decay) * deviance
+                # self.network.deviance[l] *= self.batch_size / (self.batch_size - 1)
+
+                # Normalize output of linear transform, then scale and shift
+                data = (data - self.network.mean[l]) / (self.network.deviance[l] + 1e-8)
+                data = self.network.scale[l] * data + self.network.shift[l]
 
             # Important: apply activation function to transform into next subspace
             data = self.network.basis[l](data)
             self._cached_stimulus.append(data)
 
         return self._cached_stimulus
-
-    def batch_normalize(self, data, l):
-        # Computes batch norm update and updates the variance and mean estimates
-        mean = np.average(data)
-        self.network.mean[l] = self.batch_norm_decay * self.network.mean[l] + (1 - self.batch_norm_decay) * mean
-
-        variance = np.average(np.var(data, axis=0))
-        self.network.variance[l] = self.batch_norm_decay * self.network.variance[l] + (1 - self.batch_norm_decay) * variance
-        # self.network.variance[l] *= self.batch_size / (self.batch_size - 1)
-
-        # Normalize output of linear transform, then scale and shift
-        data = (data - self.network.mean[l]) / np.abs(self.network.variance[l] + 1e-8)
-        return self.network.scale[l] * data + self.network.shift[l]
 
     def iterate(self, i, rate):
         raise NotImplementedError("Optimizer is an abstract base class")

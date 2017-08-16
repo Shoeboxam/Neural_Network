@@ -56,7 +56,7 @@ class Continuous:
 
     def survey(self, quantity=128):
         # Quantity is adjusted to the closest meshgrid approximation
-        axis_length = round(quantity**self._size_output**-1)
+        axis_length = int(round(quantity**self._size_input**-1))
 
         axes = []
         for idx in range(self._size_input):
@@ -145,9 +145,6 @@ optimizer_params = {
     "learn_anneal": anneal_fixed,
     "learn_decay": 0.1,
 
-    "batch_norm_step": 0.001,
-    "batch_norm_decay": 0.95,
-
     "weight_clipping": clip_soft,
     "weight_threshold": 5,
 
@@ -159,7 +156,7 @@ optimizer_params = {
     "graph": True
     }
 
-Adagrad(network, environment, **optimizer_params).minimize()
+GradientDescent(network, environment, **optimizer_params).minimize()
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()

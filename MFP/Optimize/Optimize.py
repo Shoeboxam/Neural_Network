@@ -77,13 +77,10 @@ class Optimize(object):
 
         plt.pause(0.00001)
 
-    def _broadcast(self, parameter, length=None):
-        if not length:
-            length = len(self.network.weights)
-
+    def _broadcast(self, parameter):
         if type(parameter) is not list:
-            return Array([parameter] * length)
-        elif len(parameter) != length:
+            return Array([parameter] * len(self.network.weights))
+        elif len(parameter) != len(self.network.weights):
             # Note: batch norm step requires [# layers + 1] arguments
             raise ValueError('Parameter length does not match number of layers.')
         return Array(parameter)

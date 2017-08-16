@@ -153,6 +153,9 @@ optimizer_params = {
     "learn_step": 0.01,
     "learn_anneal": anneal_fixed,
 
+    "batch_norm_step": 0.1,
+    "batch_norm_decay": 0.99,
+
     "epsilon": 0.0,           # error allowance
     "iteration_limit": None,  # limit on number of iterations to run
 

@@ -36,10 +36,10 @@ class MFP(object):
             self.weights.append(Array(weights))
 
         # Batch norm: normalization parameters (default is identity)
-        self.variance = [1.] * (len(units) + 1)
-        self.mean = [0.] * (len(units) + 1)
-        self.scale = [1.] * (len(units) + 1)
-        self.shift = [0.] * (len(units) + 1)
+        self.deviance = [1.] * len(units)
+        self.mean = [0.] * len(units)
+        self.scale = [1.] * len(units)
+        self.shift = [0.] * len(units)
 
         # Broadcast basis function, so that each layer has one
         if type(basis) is not list:
@@ -55,21 +55,16 @@ class MFP(object):
         bias = np.ones([1, data.shape[1]])
 
         def batch_norm(x, l):
-            print()
-            print(self.variance[l] / self.scale[l])
-            print(self.mean[l] - self.shift[l])
-            normalized = (x - self.mean[l]) / np.abs(self.variance[l] + 1e-8)
+            # print()
+            # print(self.scale[l])
+            normalized = (x - self.mean[l]) / (self.deviance[l] + 1e-8)
             return self.scale[l] * normalized + self.shift[l]
 
-        data = batch_norm(data, 0)
-
         for idx in range(len(self.weights)):
-            # Batch norm regularization
-            data = batch_norm(data, idx + 1)
             #  r = basis                     (W                 * s)
             data = self.basis[idx](batch_norm(self.weights[idx] @ np.vstack([data, bias]), idx))
 
-        return batch_norm(data, -1)
+        return data
 
     def save(self, name='network'):
         np.savez('./data/trained/' + name, self.weights)
