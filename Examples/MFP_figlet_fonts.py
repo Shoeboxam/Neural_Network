@@ -124,7 +124,7 @@ class FigletFonts:
         return output
 
 
-ascii_vals = [i for i in range(65, 91)]
+ascii_vals = [i for i in range(33, 126)]
 environment = FigletFonts('banner3', noise=0.0, autoencoder=True, ascii_vals=ascii_vals)
 
 # ~~~ Create the network ~~~
@@ -133,7 +133,7 @@ network_params = {
     "units": [environment.size_input(), 150, environment.size_output()],
 
     # Basis function(s) from network's Function.py
-    "basis": basis_logistic,
+    "basis": basis_bent,
     "basis_final": basis_logistic,
 
     # Distribution to use for weight initialization
@@ -148,13 +148,14 @@ optimizer_params = {
     "batch_size": 5,
 
     "cost": cost_cross_entropy,
+    "normalize": False,
 
     # Learning rate
     "learn_step": 0.01,
     "learn_anneal": anneal_fixed,
 
-    "batch_norm_step": 0.1,
-    "batch_norm_decay": 0.99,
+    # "batch_norm_step": 0.0001,
+    "batch_norm_decay": 0.0,
 
     "epsilon": 0.0,           # error allowance
     "iteration_limit": None,  # limit on number of iterations to run

@@ -105,8 +105,8 @@ class Continuous:
 # environment = Continuous([lambda a, b: (24 * a**2 - 2 * b**2 + a),
 #                           lambda a, b: (12 * a ** 2 + 12 * b ** 3 + b)], domain=[[-1, 1]] * 2)
 
-environment = Continuous([lambda a, b: (2 * b**2 + 0.5 * a**3),
-                          lambda a, b: (0.5 * a**3 + 2 * b**2 - b)], domain=[[-1, 1]] * 2)
+environment = Continuous([lambda a, b: (2 * b**2 + 0.5 * a**3 + 50),
+                          lambda a, b: (0.5 * a**3 + 2 * b**2 - b - 23)], domain=[[-1, 1]] * 2)
 
 # environment = Continuous([lambda x: np.sin(x),
 #                           lambda x: np.cos(x)], domain=[[-2 * np.pi, 2 * np.pi], [-np.pi, np.pi]])
@@ -140,10 +140,12 @@ optimizer_params = {
     # Error function from Optimizer.py
     "cost": cost_sum_squared,
 
+    "normalize": True,
+
     # Learning rate
-    "learn_step": 0.001,
-    "learn_anneal": anneal_fixed,
-    "learn_decay": 0.1,
+    "learn_step": 0.01,
+    "learn_anneal": anneal_power,
+    "learn_decay": 0.99,
 
     "weight_clipping": clip_soft,
     "weight_threshold": 5,
@@ -156,7 +158,7 @@ optimizer_params = {
     "graph": True
     }
 
-GradientDescent(network, environment, **optimizer_params).minimize()
+Adagrad(network, environment, **optimizer_params).minimize()
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()

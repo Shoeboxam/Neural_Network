@@ -1,10 +1,10 @@
 # Learn a logic gate
 
 # Use custom implementation:
-from MFP import *
+# from MFP import *
 
 # Use Tensorflow wrapper:
-# from MFP_TF import *
+from MFP_TF import *
 
 import itertools
 import math
@@ -70,8 +70,7 @@ network_params = {
     "basis_final": basis_logistic,
 
     # Weight initialization distribution
-    "distribute": dist_uniform,
-    "orthogonalize": True,
+    "distribute": dist_uniform
     }
 
 network = MFP(**network_params)
@@ -79,7 +78,7 @@ network = MFP(**network_params)
 # ~~~ Train the network ~~~
 optimizer_params = {
     "cost": cost_sum_squared,
-    "batch_size": 16,
+    "batch_size": 5,
 
     # Learning rate
     "learn_step": .001,
@@ -101,7 +100,7 @@ optimizer_params = {
     "graph": True
     }
 
-SimulatedAnnealing(network, environment, **optimizer_params).minimize()
+GradientDescent(network, environment, **optimizer_params).minimize()
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()

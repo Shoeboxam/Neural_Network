@@ -36,10 +36,16 @@ class MFP(object):
             self.weights.append(Array(weights))
 
         # Batch norm: normalization parameters (default is identity)
-        self.deviance = [1.] * len(units)
-        self.mean = [0.] * len(units)
-        self.scale = [1.] * len(units)
-        self.shift = [0.] * len(units)
+        self.deviance = [np.ones(nodes) for nodes in units[1:]]
+        self.mean = [np.zeros(nodes) for nodes in units[1:]]
+        self.scale = [np.ones(nodes) for nodes in units[1:]]
+        self.shift = [np.zeros(nodes) for nodes in units[1:]]
+
+        # Input and output (de)normalization
+        self.input_mean = np.zeros(units[0])
+        self.input_deviance = np.ones(units[0])
+        self.output_mean = np.zeros(units[-1])
+        self.output_deviance = np.ones(units[-1])
 
         # Broadcast basis function, so that each layer has one
         if type(basis) is not list:
@@ -52,19 +58,21 @@ class MFP(object):
 
     def predict(self, data):
         """Stimulus evaluation"""
+        # Normalize data on input
+        data = (data - self.input_mean[:, None]) / (self.input_deviance[:, None] + 1e-8)
         bias = np.ones([1, data.shape[1]])
 
         def batch_norm(x, l):
-            # print()
-            # print(self.scale[l])
-            normalized = (x - self.mean[l]) / (self.deviance[l] + 1e-8)
-            return self.scale[l] * normalized + self.shift[l]
+            normalized = (x - self.mean[l][:, None]) / (self.deviance[l][:, None] + 1e-8)
+            return self.scale[l][:, None] * normalized + self.shift[l][:, None]
 
         for idx in range(len(self.weights)):
             #  r = basis                     (W                 * s)
             data = self.basis[idx](batch_norm(self.weights[idx] @ np.vstack([data, bias]), idx))
 
-        return data
+        # Denormalize on output
+        print(data)
+        return data * self.output_deviance[:, None] + self.output_mean[:, None]
 
     def save(self, name='network'):
         np.savez('./data/trained/' + name, self.weights)

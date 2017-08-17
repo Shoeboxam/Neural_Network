@@ -1,8 +1,9 @@
 import numpy as np
 from .Function import *
+# The network graph is constructed of gates that expose a forward pass and a backward pass.
 
 
-class Layer(object):
+class Gate(object):
     def __init__(self, children):
 
         # Remember children
@@ -20,7 +21,7 @@ class Layer(object):
         self._backward_cache = []
 
 
-class Transform(Layer):
+class Transform(Gate):
     name = 'transform'
 
     def __init__(self, children, nodes, distribute=dist_normal):
@@ -78,7 +79,7 @@ class Transform(Layer):
         return node_count
 
 
-class Softplus(Layer):
+class Softplus(Gate):
     name = 'Softplus'
 
     def __call__(self, i, stimulus, d=0):
