@@ -5,13 +5,13 @@ https://shoeboxam.github.io/Neural_Network/
 
 There are two different implementations of the same network:
 
-|   Folder  |                       Name                      |
-|-----------|-------------------------------------------------|
-| MFP       | Multilayer Feedforward Perceptron in Numpy      |
-| MFP_TF    | Multilayer Feedforward Perceptron in Tensorflow |
-| MFP_Graph | MFP with configurable architecture (incomplete) |
-| RBM       | Restricted Boltzmann Machine (incomplete)       |
-
+|   Folder   |                       Name                      |
+|------------|-------------------------------------------------|
+| MFP        | Multilayer Feedforward Perceptron in Numpy      |
+| MFP_Simple | Multilayer Feedforward Perceptron, simplified   |
+| MFP_TF     | Multilayer Feedforward Perceptron in Tensorflow |
+| MFP_Graph  | MFP with configurable architecture (incomplete) |
+| RBM        | Restricted Boltzmann Machine (incomplete)       |
 
 Each implementation has the following structure:  
 
@@ -21,14 +21,16 @@ Each implementation has the following structure:
 | Network.py  | Network data structure      |
 | Function.py | Listing of common functions |
 
-To use the library, follow the examples shown in the demonstration files:  
+To use the library, follow the examples shown in the demonstration files. These files can also be run, with configurable settings, to evaluate the optimizers and your selected network architecture.  
 
-|             File            |                   Purpose                   |
-|-----------------------------|---------------------------------------------|
-| demo_continuous_function.py | Fit multidimensional mathematical functions |
-| demo_logic_gate.py          | Reproduce logic gates of arbitrary size     |
-| demo_mnist.py               | Learn to classify the MNIST dataset         |
+|            File            |                   Purpose                    |
+|----------------------------|----------------------------------------------|
+| MFP_continuous_function.py | Fit multidimensional mathematical functions  |
+| MFP_figlet_fonts.py        | Autoencoder trained to reproduce ASCII fonts |
+| MFP_logic_gate.py          | Reproduce logic gates of arbitrary size      |
+| MFP_mnist.py               | Learn to classify the MNIST dataset          |
 
+The simplified MFP network does not have support for batch processing, so I had to make a modified version of MFP_continuous_function.py to work with it.  
 
 The following features are supported in the MFP network:  
 - Optimizers
