@@ -121,9 +121,10 @@ environment = Continuous([lambda a, b: (2 * b**2 + 0.5 * a**3 + 50),
 # environment = Continuous([lambda v: (24 * v**4 - 2 * v**2 + v)], domain=[[-1, 1]])
 
 # ~~~ Create the network ~~~
-graph = Logistic(Transform(Stimulus(environment), 20))
+graph = Logistic(Transform(Stimulus(environment), 2))
 variables = graph.variables
 
 # ~~~ Test the network ~~~
-[stimuli, expectation] = environment.survey()
-print(graph(stimulus={environment.tag: stimuli}))
+[stimuli, expectation] = environment.sample()
+graph.gradient({environment.tag: stimuli}, variables[0], np.ones([1, 2]))
+print(graph({environment.tag: stimuli}))
