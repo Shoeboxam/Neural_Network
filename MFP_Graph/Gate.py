@@ -1,4 +1,5 @@
 import numpy as np
+from .Variable import Variable
 
 
 # Return cached value if already computed in current iteration
@@ -31,16 +32,20 @@ class Gate(object):
             children = [children]
         self.children = children
 
+        # Stores references to variables in the gate
+        self._variables = {}
+
         self._iteration = 0
         self._cached___call__ = None
-        self._cached_gradient = None
-        self._cached_hessian = None
+        self._cached_gradient = {}
 
     def __call__(self, stimulus, i=None):
         return np.vstack([child(stimulus, self) for child in self.children])
 
-    def gradient(self, stimulus, variable):
-        return np.vstack([child.gradient(variable) for child in self.children])
+    def gradient(self, grad, stimulus, variable):
+        if variable not in self.variables():
+            return grad @ np.zeros(self(stimulus).shape)
+        return grad @ np.vstack([child.gradient(stimulus, variable[idx]) for idx, child in enumerate(self.children)])
 
     @property
     def output_nodes(self):
@@ -57,11 +62,22 @@ class Gate(object):
                 node_count += child.input_nodes
         return node_count
 
+    @_cache
+    @property
+    def variables(self):
+        """List the input variables"""
+        variables = self._variables.keys()
+        for child in self.children:
+            variables.extend(child.variables())
+        return variables
+
 
 class Transform(Gate):
-    def __init__(self, children, nodes):
+    def __init__(self, children, weights, biases):
         super().__init__(children)
-        self.weights = np.random.normal(size=(nodes, self.input_nodes + 1))
+        self._variables = {
+            'weights': weights,
+            'biases': biases}
 
     @property
     def output_nodes(self):
@@ -72,13 +88,19 @@ class Transform(Gate):
         bias = np.ones([1, stimulus.shape[1]])
 
         propagated = super()(stimulus)
-        return self.weights @ np.vstack([propagated, bias])
+        return np.vstack([propagated, bias]) @ self.weights
 
-    @_cache
     @property
+    @_cache
     @_chain_rule
-    def gradient(self, stimulus, variable):
-        return self.weights[..., :-1]
+    def gradient(self, grad, stimulus, variable):
+        propagated = super()(stimulus)
+        if variable is self.weights:
+            # Full derivative: This is a tensor product simplification to avoid the use of the kron product
+            return grad.T @ propagated
+        if variable is self.biases:
+            return grad
+        return super().gradient(grad @ self.weights, stimulus, variable)
 
 
 class Logistic(Gate):
@@ -87,10 +109,10 @@ class Logistic(Gate):
         features = super()(stimulus)
         return 1.0 / (1.0 + np.exp(-features))
 
-    @_cache
     @property
+    @_cache
     @_chain_rule
-    def gradient(self, stimulus, variable):
+    def gradient(self, grad, stimulus, variable):
         return self() * (1.0 - self()) * super()(stimulus)
 
 
@@ -106,8 +128,5 @@ class Stimulus(Gate):
         return self.environment[stimulus].sample()
 
     @property
-    def gradient(self, stimulus, variable):
+    def gradient(self, grad, stimulus, variable):
         return np.eye(variable.shape[1])
-
-        # variable data structure like [[[4], [5]], [3]], structure of network built during initial pass
-        # the numeric refers to stimulus id
