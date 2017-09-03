@@ -45,7 +45,7 @@ class Variable(np.ndarray):
 
     def __matmul__(self, other):
         """Implicitly broadcast and vectorize matrix multiplication along axis 3"""
-        if type(self) in self._types or type(other) in self._types:
+        if type(self) in _scalar or type(other) in _scalar:
             return self * other
 
         # Stimuli id represents dimension 3.

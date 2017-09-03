@@ -23,6 +23,8 @@ class Continuous:
         self._funct = funct
         self._domain = domain
 
+        self.tag = 'Continuous_' + str(np.random.randint(1000, 9999))
+
         if range is None:
             self._range = [[-1, 1]] * len(funct)
 
@@ -119,48 +121,9 @@ environment = Continuous([lambda a, b: (2 * b**2 + 0.5 * a**3 + 50),
 # environment = Continuous([lambda v: (24 * v**4 - 2 * v**2 + v)], domain=[[-1, 1]])
 
 # ~~~ Create the network ~~~
-network_params = {
-    # Shape of network
-    "units": [environment.size_input(), 20, 10, environment.size_output()],
-
-    # Basis function(s) from Optimizer.py
-    "basis": basis_bent,
-
-    # Weight initialization distribution
-    "distribute": dist_normal
-    }
-
-Softplus(Transform(environment, 1, ))
-network = MFP(**network_params)
-
-# ~~~ Train the network ~~~
-optimizer_params = {
-    # Source of stimuli
-    "batch_size": 100,
-
-    # Error function from Optimizer.py
-    "cost": cost_sum_squared,
-
-    "normalize": True,
-
-    # Learning rate
-    "learn_step": 0.01,
-    "learn_anneal": anneal_power,
-    "learn_decay": 0.99,
-
-    "weight_clipping": clip_soft,
-    "weight_threshold": 5,
-
-    "epsilon": .04,           # error allowance
-    "iteration_limit": 500000,  # limit on number of iterations to run
-
-    "debug_frequency": 50,
-    "debug": True,
-    "graph": True
-    }
-
-Adagrad(network, environment, **optimizer_params).minimize()
+graph = Logistic(Transform(Stimulus(environment), 20))
+variables = graph.variables
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()
-print(network.predict(stimuli))
+print(graph(stimulus={environment.tag: stimuli}))
