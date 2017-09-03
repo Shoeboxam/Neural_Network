@@ -17,15 +17,6 @@ def _cache(method):
     return decorator
 
 
-def _chain_rule(method):
-    def decorator(self, stimulus, variable):
-        exterior = method(self, stimulus, variable)
-        interior = np.vstack([child.gradient(stimulus, variable[idx]) for idx, child in enumerate(self.children)])
-        return exterior @ interior
-
-    return decorator
-
-
 class Gate(object):
     def __init__(self, children):
         if type(children) is not list:
@@ -44,12 +35,13 @@ class Gate(object):
 
     def gradient(self, grad, stimulus, variable):
         if variable not in self.variables():
+            # TODO: This shape may be incorrect
             return grad @ np.zeros(self(stimulus).shape)
         return grad @ np.vstack([child.gradient(stimulus, variable[idx]) for idx, child in enumerate(self.children)])
 
     @property
     def output_nodes(self):
-        return 0
+        return sum([child.output_nodes for child in self.children])
 
     @property
     def input_nodes(self):
@@ -92,7 +84,6 @@ class Transform(Gate):
 
     @property
     @_cache
-    @_chain_rule
     def gradient(self, grad, stimulus, variable):
         propagated = super()(stimulus)
         if variable is self.weights:
@@ -111,9 +102,9 @@ class Logistic(Gate):
 
     @property
     @_cache
-    @_chain_rule
     def gradient(self, grad, stimulus, variable):
-        return self() * (1.0 - self()) * super()(stimulus)
+        return super().gradient(grad * self(stimulus) * (1.0 - self(stimulus)), stimulus, variable)
+
 
 
 class Stimulus(Gate):
