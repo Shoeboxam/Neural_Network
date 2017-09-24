@@ -1,18 +1,20 @@
 ## Neural Network
 
-A mathematical explanation of the network architecture is available:
-https://shoeboxam.github.io/Neural_Network/
+A mathematical explanation of the network architecture is available:  
+https://shoeboxam.github.io/Neural_Network/  
 
-There are two different implementations of the same network:
+A rewrite to a more flexible gate-based system is in progress:  
+https://github.com/Shoeboxam/Neural_Network_Graph  
+
+There are two different implementations of the same network:  
 
 |   Folder   |                       Name                      |
 |------------|-------------------------------------------------|
 | MFP        | Multilayer Feedforward Perceptron in Numpy      |
 | MFP_Simple | Multilayer Feedforward Perceptron, simplified   |
 | MFP_TF     | Multilayer Feedforward Perceptron in Tensorflow |
-| MFP_Graph  | MFP with configurable architecture (incomplete) |
 | RBM        | Restricted Boltzmann Machine (incomplete)       |
-
+	
 Each implementation has the following structure:  
 
 |     File    |           Purpose           |
