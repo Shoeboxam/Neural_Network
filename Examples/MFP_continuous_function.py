@@ -121,7 +121,7 @@ environment = Continuous([lambda a, b: (2 * b**2 + 0.5 * a**3 + 50),
 # ~~~ Create the network ~~~
 network_params = {
     # Shape of network
-    "units": [environment.size_input(), 20, 10, environment.size_output()],
+    "units": [environment.size_input(), 10, environment.size_output()],
 
     # Basis function(s) from Optimizer.py
     "basis": basis_bent,
@@ -143,17 +143,17 @@ optimizer_params = {
     "normalize": True,
 
     # Learning rate
-    "learn_step": 0.01,
+    "learn_step": 0.1,
     "learn_anneal": anneal_power,
     "learn_decay": 0.99,
 
-    "weight_clipping": clip_soft,
-    "weight_threshold": 5,
+    # "weight_clipping": clip_soft,
+    # "weight_threshold": 5,
 
     "epsilon": .04,           # error allowance
     "iteration_limit": 500000,  # limit on number of iterations to run
 
-    "debug_frequency": 50,
+    "debug_frequency": 10,
     "debug": True,
     "graph": True
     }

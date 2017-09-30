@@ -294,12 +294,18 @@ class Nesterov(Backpropagation):
 
 class Adagrad(Backpropagation):
     def __init__(self, network, environment, **settings):
-        settings = {**{'wedge': 0.001}, **settings}
+        settings = {**{'wedge': 0.001, 'decay': 0.9}, **settings}
         super().__init__(network, environment, **settings)
 
+        self.decay = self._broadcast(self.decay)
+        self.grad_square = [Array(np.zeros([theta.shape[0]] * 2)) for theta in network.weights]
+
     def iterate(self, rate, l):
+        # Historical gradient with exponential decay
+        self.grad_square[l] = self.decay[l] * self.grad_square[l] + \
+                              (1 - self.decay[l]) * self.gradient[l] @ self.gradient[l].T
         # Normalize gradient
-        norm = (np.sqrt(np.diag(self.gradient[l] @ self.gradient[l].T)) + self.wedge)[..., None]
+        norm = (np.sqrt(np.diag(self.grad_square[l])) + self.wedge)[..., None]
         self.network.weights[l] -= rate * self.gradient[l] / norm
 
 

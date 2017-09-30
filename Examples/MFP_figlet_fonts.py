@@ -160,7 +160,7 @@ optimizer_params = {
     "epsilon": 0.0,           # error allowance
     "iteration_limit": None,  # limit on number of iterations to run
 
-    "debug_frequency": 20,
+    "debug_frequency": 1,
     "debug": True,
     "graph": True
     }
