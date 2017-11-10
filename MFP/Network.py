@@ -71,7 +71,7 @@ class MFP(object):
             data = self.basis[idx](batch_norm(self.weights[idx] @ np.vstack([data, bias]), idx))
 
         # Denormalize on output
-        print(data)
+        # print(data)
         return data * self.output_deviance[:, None] + self.output_mean[:, None]
 
     def save(self, name='network'):

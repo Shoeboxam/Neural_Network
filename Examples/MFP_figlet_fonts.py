@@ -77,15 +77,24 @@ class FigletFonts:
             return [stimuli.T, self.expected[x].T]
 
     def survey(self, quantity=None):
-
         if not quantity:
             quantity = len(self.ascii_vals)
-        x = np.linspace(0, len(self.ascii_vals) - 1, quantity).astype(int)  # Size changes error granularity
+        # x = np.linspace(0, len(self.ascii_vals) - 1, quantity).astype(int)  # Size changes error granularity
+        x = np.random.randint(len(self.ascii_vals), size=quantity)
+
+        if self.noise:
+            generated_noise = np.random.normal(0., scale=len(self.character_set) // 2, size=self.stimuli[x].shape).astype(int)
+            mask = np.random.binomial(1, self.noise, size=self.stimuli[x].shape)
+            stimuli = np.mod(self.stimuli[x] + generated_noise * mask, len(self.character_set))
+        else:
+            stimuli = self.stimuli[x]
+
+        print(self.reformat(stimuli))
 
         if self.autoencoder:
-            return [self.stimuli[x].T, self.stimuli[x].T]
+            return [stimuli.T, self.stimuli[x].T]
         else:
-            return [self.stimuli[x].T, self.expected[x].T]
+            return [stimuli.T, self.expected[x].T]
 
     def size_input(self):
         return np.size(self.stimuli[0])
@@ -102,7 +111,7 @@ class FigletFonts:
 
     def error(self, expect, predict):
         if self.autoencoder:
-            x = np.random.randint(0, len(self.ascii_vals))
+            x = np.random.randint(0, expect.shape[1])
             print(self.reformat(predict[:, x]))
             print(self.reformat(expect[:, x]))
             return np.linalg.norm(expect - predict)
@@ -125,12 +134,12 @@ class FigletFonts:
 
 
 ascii_vals = [i for i in range(33, 126)]
-environment = FigletFonts('banner3', noise=0.0, autoencoder=True, ascii_vals=ascii_vals)
+environment = FigletFonts('banner3', noise=0.2, autoencoder=True, ascii_vals=ascii_vals)
 
 # ~~~ Create the network ~~~
 network_params = {
     # Shape of network
-    "units": [environment.size_input(), 150, environment.size_output()],
+    "units": [environment.size_input(), 100, environment.size_output()],
 
     # Basis function(s) from network's Function.py
     "basis": basis_bent,
@@ -145,7 +154,7 @@ network = MFP(**network_params)
 # ~~~ Train the network ~~~
 optimizer_params = {
     # Source of stimuli
-    "batch_size": 5,
+    "batch_size": 10,
 
     "cost": cost_cross_entropy,
     "normalize": False,
@@ -160,7 +169,8 @@ optimizer_params = {
     "epsilon": 0.0,           # error allowance
     "iteration_limit": None,  # limit on number of iterations to run
 
-    "debug_frequency": 1,
+    "debug_frequency": 10,
+    "debug_count": 1,
     "debug": True,
     "graph": True
     }
@@ -169,4 +179,5 @@ Adagrad(network, environment, **optimizer_params).minimize()
 
 # ~~~ Test the network ~~~
 [stimuli, expectation] = environment.survey()
-print(network.predict(stimuli))
+
+# print(network.predict(stimuli))

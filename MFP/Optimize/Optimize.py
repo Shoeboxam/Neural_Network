@@ -18,6 +18,7 @@ class Optimize(object):
             "iteration_limit": 10000,  # limit on number of iterations to run
 
             "debug_frequency": 50,
+            "debug_count": None,
             "debug": False,
             "graph": False
         }, **kwargs}
@@ -31,7 +32,11 @@ class Optimize(object):
             self.plot_points = []
 
     def convergence_check(self):
-        [inputs, expectation] = map(Array, self.environment.survey())
+        if self.debug_count:
+            [inputs, expectation] = map(Array, self.environment.survey(quantity=self.debug_count))
+        else:
+            [inputs, expectation] = map(Array, self.environment.survey())
+
         prediction = self.network.predict(inputs)
         error = self.environment.error(expectation, prediction)
 
