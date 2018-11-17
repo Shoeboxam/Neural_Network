@@ -80,7 +80,10 @@ class GradientDescent(Optimize):
             # Chain rule to compute gradient down to weight matrix
             # Matrix operators have left-to-right associativity
             dln_dWvec = dln_dq @ dq_dq @ dq_dr @ dr_dWvec
-            dln_dW = np.reshape(dln_dWvec, self.network.weights[l].shape)
+
+            # Fortran-order indexing is needed to vec⁻¹ the derivative, demonstration is here:
+            # https://github.com/Shoeboxam/Applied_Mathematics/blob/master/optimization/kron_vs_tensor_gradients.py
+            dln_dW = np.reshape(dln_dWvec, self.network.weights[l].shape, order='F')
 
             self._cached_gradient.insert(0, dln_dW)
 

@@ -109,7 +109,7 @@ class Backpropagation(Optimize):
                     self.network.shift[l] -= learn_rate[l] * self._cached_gradient_shift[l]
 
             if self.iteration_limit is not None and self.iteration >= self.iteration_limit:
-                return true
+                return True
 
             if (self.graph or self.epsilon or self.debug) and self.iteration % self.debug_frequency == 0:
                 converged = self.convergence_check()
